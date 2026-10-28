@@ -3,8 +3,8 @@
 // sbagliate degli anelli, assieme senza compenetrazioni, rotazione del
 // coperchio 0→180° con aste e anelli, scatto delle linguette, magneti del
 // fermo a 90° e piatti di stampa.
-import { loadManifold, buildSolids, buildPrintLayouts, openLid, rodInChannel, ringInChannel } from '../js/geometry.js';
-import { DEFAULT_PARAMS, PARAM_SPECS, MAGNET } from '../js/params.js';
+import { loadManifold, buildSolids, buildPrintLayouts, buildMiniPlate, openLid, rodInChannel, ringInChannel } from '../js/geometry.js';
+import { DEFAULT_PARAMS, PARAM_SPECS, MAGNET, MINI } from '../js/params.js';
 
 const wasm = await loadManifold();
 const BED = 256;
@@ -85,8 +85,14 @@ function run(label, params, { full }) {
         `linguette: interferenza solo nei primi gradi di apertura (${latch.map(([t, v]) => `${t}°: ${v.toFixed(1)} mm³`).join(', ')})`);
       ok(d.tongueStrain < 0.01, `deformazione della linguetta ${(d.tongueStrain * 100).toFixed(2)}% (< 1%)`);
     }
-    const ringsAtBar = s.union(d.chX.flatMap((_, i) => Array.from({ length: i < 4 ? 7 : 6 }, (_, k) => ringInChannel(s, i, k * L))));
-    const ringsSpread = s.union(d.chX.flatMap((_, i) => Array.from({ length: i < 4 ? 7 : 6 }, (_, k) => ringInChannel(s, i, k * (L + 4)))));
+    ok(d.tongue.y1 + 2 <= d.yBarFront, `linguette libere davanti alla barra (finiscono a ${f2(d.tongue.y1)}, barra a ${f2(d.yBarFront)})`);
+    // 4 colori × capienza distribuiti sulle aste (40 su 6: 7, 7, 7, 7, 6, 6)
+    const perRod = (i) => Math.min(cap, Math.floor((4 * cap) / d.n) + (i < (4 * cap) % d.n ? 1 : 0));
+    // distanziati di 4 mm, o meno se il binario è corto: davanti restano i 2 mm
+    // di gioco del binario (in apertura la parte sotto l'asse avanza un poco)
+    const spread = (n) => (n > 1 ? Math.max(0, Math.min(4, (d.chLen - 2 - n * L) / (n - 1))) : 0);
+    const ringsAtBar = s.union(d.chX.flatMap((_, i) => Array.from({ length: perRod(i) }, (_, k) => ringInChannel(s, i, k * L))));
+    const ringsSpread = s.union(d.chX.flatMap((_, i) => Array.from({ length: perRod(i) }, (_, k) => ringInChannel(s, i, k * (L + spread(perRod(i)))))));
     const loadA = s.union([rods, ringsAtBar]);
     const loadB = s.union([rods, ringsSpread]);
     const sweep90 = (full ? [2, 5, 10, 20, 30, 45, 60, 75, 90] : [10, 45, 90]).map((th) => {
@@ -161,7 +167,31 @@ for (const spec of PARAM_SPECS) {
 }
 run('Cursori al minimo', { ...lo, segments: 32 }, { full: false });
 run('Cursori al massimo', { ...hi, segments: 32 }, { full: false });
+const dm = run(`Stampa prova (${MINI.channels} binari × ${MINI.capacity} anelli)`, { ...DEFAULT_PARAMS, ...MINI }, { full: true });
+run('Stampa prova, cursori al minimo', { ...lo, ...MINI, segments: 32 }, { full: false });
+run('Stampa prova, cursori al massimo', { ...hi, ...MINI, segments: 32 }, { full: false });
 
-console.log(`\nScatola chiusa ${d0.width.toFixed(1)} × ${d0.length.toFixed(1)} × ${d0.H.toFixed(1)} mm (+ ${DEFAULT_PARAMS.rodTail} mm di code), aperta ${d0.openLength.toFixed(1)} mm. Pausa magneti a Z = ${d0.pauseZ.toFixed(2)} mm.`);
+console.log('\n▶ Piatto della stampa prova');
+{
+  const s = buildSolids(wasm, { ...DEFAULT_PARAMS, ...MINI });
+  try {
+    const plate = buildMiniPlate(s);
+    const b = plate.boundingBox();
+    const sx = b.max[0] - b.min[0];
+    const sy = b.max[1] - b.min[1];
+    ok(near(b.min[2], 0, 1e-6) && sx <= BED - 10 && sy <= BED - 10, `un solo piatto: ${sx.toFixed(1)} × ${sy.toFixed(1)} mm`);
+    // base, coperchio, asta e anello staccati; le sedi dei magneti sono gusci negativi
+    const parts = plate.decompose();
+    const bodies = parts.map((x) => x.volume()).filter((v) => v > 0).sort((x, y) => y - x);
+    for (const x of parts) x.delete();
+    ok(bodies.length === 4 && near(bodies[2], s.rod.volume(), 1e-3) && near(bodies[3], s.ring.volume(), 1e-3),
+      `scatola, asta e anello separati sul piatto (${bodies.length} corpi)`);
+  } finally {
+    s.dispose();
+  }
+}
+
+console.log(`\nStampa prova: scatola chiusa ${dm.width.toFixed(1)} × ${dm.length.toFixed(1)} × ${dm.H.toFixed(1)} mm, aperta ${dm.openLength.toFixed(1)} mm, asta da ${dm.rodLen.toFixed(0)} mm.`);
+console.log(`Scatola chiusa ${d0.width.toFixed(1)} × ${d0.length.toFixed(1)} × ${d0.H.toFixed(1)} mm (+ ${DEFAULT_PARAMS.rodTail} mm di code), aperta ${d0.openLength.toFixed(1)} mm. Pausa magneti a Z = ${d0.pauseZ.toFixed(2)} mm.`);
 console.log(failures ? `\n${failures} verifiche fallite` : '\nTutte le verifiche superate');
 process.exit(failures ? 1 : 0);

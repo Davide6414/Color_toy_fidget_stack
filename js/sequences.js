@@ -413,7 +413,7 @@ export const SEQUENCES = {
     c.v.setMode('stampa');
     try {
       await c.view('stampa', 1000);
-      c.caption(1, 1, 'Quattro piatti, nessun supporto', 'Scatola aperta a 180° (pausa per i magneti), 40 anelli in piedi (un piatto per colore senza AMS), 6 aste distese su una faccia, e il piatto di prova per tarare i giochi.');
+      c.caption(1, 1, 'Piatti di stampa, nessun supporto', 'Scatola aperta a 180° (pausa per i magneti), 40 anelli in piedi (un piatto per colore senza AMS), 6 aste distese su una faccia. Prima: il piatto di prova per tarare i giochi e la stampa prova, una scatola mini con un\'asta e un anello per provare il meccanismo.');
       await c.wait(5000);
     } finally {
       c.v.setMode('modello');

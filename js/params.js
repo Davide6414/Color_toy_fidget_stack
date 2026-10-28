@@ -44,6 +44,12 @@ export const COLORS = [
   { id: 'blu', name: 'Blu', hex: '#3b8fe3' },
 ];
 
+// Stampa prova: la stessa scatola con 3 binari da 3 anelli. Giochi, anelli,
+// aste, cerniera e magneti restano a misura vera: in scala 1:2 l'asta sarebbe
+// un esagono da 2 mm e i 6 × 3 mm non entrerebbero nelle pareti. Con meno di 3
+// binari le guance dei magneti finiscono sopra le nocche della base.
+export const MINI = { channels: 3, capacity: 3 };
+
 export const BOX_COLOR = '#9ed4ee';
 export const ROD_COLOR = '#b9e2f5';
 export const MAGNET = { d: 6, h: 3, clearance: 0.1, skin: 0.6 };

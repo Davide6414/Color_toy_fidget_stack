@@ -32,7 +32,15 @@ riallinea da sola, senza toccarli uno a uno.
 | [anelli_x10.stl](stl/anelli_x10.stl) | 4 piatti | in piedi | uno per colore (rosa, verde, giallo, blu), o tutti insieme con l'AMS |
 | [aste_x6.stl](stl/aste_x6.stl) | 1 | distese su una faccia | strati lungo tutta la lunghezza |
 | [piatto_di_prova.stl](stl/piatto_di_prova.stl) | 1 | già orientato | da stampare prima, per tarare i giochi |
+| [stampa_prova.stl](stl/stampa_prova.stl) | 1 | un piatto, già orientato | poi questa: scatola mini, 1 asta, 1 anello; stessa pausa a Z = 9,4 mm |
 | magneti Ø 6 × 3 mm | 4 | — | da acquistare (N35 o superiore) |
+
+**Stampa prova.** Prima dei ~100 g della scatola grande si può provare tutto il meccanismo con circa 30 g: la
+stessa scatola con 3 binari da 3 anelli (chiusa 37,8 × 55 × 20 mm), un'asta da 47 mm e un anello, in un solo
+piatto da 49 × 95 mm. Cerniera, linguette, tacche, sedi, magneti e giochi sono quelli veri. Non è in scala 1:2:
+l'asta diventerebbe un esagono da 2 mm, la parete degli anelli 0,55 mm, e i magneti 6 × 3 non entrerebbero
+nelle pareti. Con meno di 3 binari le guance dei magneti del coperchio finiscono sopra le nocche della base.
+Nel sito è il pulsante *Stampa prova* in alto.
 
 Tutto in un file: [ordina-colori-stl.zip](stl/ordina-colori-stl.zip). Nessun supporto, nessun brim.
 Ugello 0,4, strato 0,2, PLA. Compensazione del piede d'elefante attiva (0,1–0,15 mm).
@@ -79,7 +87,7 @@ STL della cartella `stl/` e per le verifiche.
 
 ## Verifiche automatiche
 
-`npm test` controlla, con i parametri predefiniti e con i cursori agli estremi:
+`npm test` controlla, con i parametri predefiniti e con i cursori agli estremi, sia la scatola sia la stampa prova:
 - solidi chiusi e quote delle specifiche;
 - esclusione delle posizioni sbagliate degli anelli (di traverso, in piedi, sopra un binario pieno);
 - assieme senza compenetrazioni con 10 anelli per binario;
@@ -94,7 +102,7 @@ STL della cartella `stl/` e per le verifiche.
 index.html            sito (GitHub Pages)
 css/style.css
 js/params.js          parametri primari e quote derivate
-js/geometry.js        solidi CSG di scatola, aste, anelli, piatti di stampa e piatto di prova
+js/geometry.js        solidi CSG di scatola, aste, anelli, piatti di stampa, piatto di prova e stampa prova
 js/game.js            regole, agitata, risolutore (anche in js/solver-worker.js)
 js/viewer.js          scena three.js, cinematica di coperchio, aste e anelli
 js/sequences.js       animazioni d'uso e dei pezzi

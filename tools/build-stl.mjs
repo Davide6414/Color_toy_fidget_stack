@@ -12,6 +12,7 @@ for (const f of readdirSync(outDir)) rmSync(new URL(f, outDir));
 
 const model = buildModel(await loadManifold(), DEFAULT_PARAMS);
 const d = model.dims;
+const m = model.miniDims;
 const files = {};
 for (const part of model.parts) {
   const data = toBinarySTL(part.print, part.id);
@@ -28,6 +29,7 @@ anello.stl           -   anello singolo, se preferisci disporli da te.
 aste_x6.stl          x1  6 aste distese su una faccia.
 asta.stl             -   asta singola.
 piatto_di_prova.stl  x1  da stampare prima: anelli, spezzone d'asta, 2 sedi, binario, nocca.
+stampa_prova.stl     x1  poi questa: scatola mini (${m.n} binari x ${m.p.capacity}), 1 asta, 1 anello in un piatto. Stessa PAUSA a Z = ${m.pauseZ.toFixed(1)} mm.
 
 Nessun supporto. Compensazione piede d'elefante attiva (0,1-0,15 mm).
 Scatola chiusa ${d.width.toFixed(1)} x ${d.length.toFixed(1)} x ${d.H.toFixed(1)} mm.
