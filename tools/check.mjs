@@ -3,8 +3,8 @@
 // degli anelli, assieme senza compenetrazioni, rotazione del coperchio 0→180°
 // con aste e anelli, anelli che si sfilano a 90°, nervature delle sedi,
 // scatto delle linguette, magneti del fermo a 90°, sbalzi e piatti di stampa.
-import { loadManifold, buildSolids, buildPrintLayouts, openLid, rodInChannel, ringInChannel } from '../js/geometry.js';
-import { DEFAULT_PARAMS, PARAM_SPECS, MAGNET } from '../js/params.js';
+import { loadManifold, buildSolids, buildPrintLayouts, buildMiniPlate, openLid, rodInChannel, ringInChannel } from '../js/geometry.js';
+import { DEFAULT_PARAMS, PARAM_SPECS, MAGNET, MINI } from '../js/params.js';
 
 const wasm = await loadManifold();
 const BED = 256;
@@ -122,8 +122,11 @@ function run(label, params, { full }) {
         `linguette: interferenza solo nei primi gradi di apertura (${latch.map(([t, v]) => `${t}°: ${v.toFixed(1)} mm³`).join(', ')})`);
       ok(d.tongueStrain < 0.01, `deformazione della linguetta ${(d.tongueStrain * 100).toFixed(2)}% (< 1%)`);
     }
-    const counts = spread(4 * cap, d.n);
-    ok(counts.every((c) => c <= cap) && counts.reduce((a, b) => a + b, 0) === 4 * cap, `${4 * cap} anelli distribuiti ${counts.join('-')}`);
+    ok(d.tongue.y1 + 2 <= d.yBarFront, `linguette libere davanti alla barra (finiscono a ${f2(d.tongue.y1)}, barra a ${f2(d.yBarFront)})`);
+    // 4 colori × capienza sui binari; la stampa prova (3 × 3) ha meno posti
+    // che anelli, quindi ogni binario si riempie al massimo fino alla capienza
+    const counts = spread(Math.min(4 * cap, d.n * cap), d.n);
+    ok(counts.every((c) => c <= cap), `${counts.reduce((a, b) => a + b, 0)} anelli distribuiti ${counts.join('-')}`);
     const ringsAtBar = s.union(d.chX.flatMap((_, i) => Array.from({ length: counts[i] }, (_, k) => ringInChannel(s, i, k * L))));
     const gapSpread = (d.chLen - Math.max(...counts) * L) / Math.max(...counts);
     const ringsSpread = s.union(d.chX.flatMap((_, i) => Array.from({ length: counts[i] }, (_, k) => ringInChannel(s, i, k * (L + gapSpread)))));
@@ -220,7 +223,31 @@ run('Cursori al massimo', { ...hi, segments: 32 }, { full: false });
 run('Gioco anello minimo, sede massima', { ...DEFAULT_PARAMS, slideClearance: 0.2, seatClearance: 0.25, ribInterference: 0.2, segments: 32 }, { full: false });
 run('Cerniera massima, capienza minima', { ...DEFAULT_PARAMS, hingeClearance: 0.5, capacity: 6, segments: 32 }, { full: false });
 run('Senza nervature, coda lunga', { ...DEFAULT_PARAMS, ribInterference: 0, rodTail: 10, segments: 32 }, { full: false });
+const dm = run(`Stampa prova (${MINI.channels} binari × ${MINI.capacity} anelli)`, { ...DEFAULT_PARAMS, ...MINI }, { full: true });
+run('Stampa prova, cursori al minimo', { ...lo, ...MINI, segments: 32 }, { full: false });
+run('Stampa prova, cursori al massimo', { ...hi, ...MINI, segments: 32 }, { full: false });
 
-console.log(`\nScatola chiusa ${d0.width.toFixed(1)} × ${d0.length.toFixed(1)} × ${d0.H.toFixed(1)} mm (+ ${DEFAULT_PARAMS.rodTail} mm di code), aperta ${d0.openLength.toFixed(1)} mm. Pausa magneti a Z = ${d0.pauseZ.toFixed(2)} mm.`);
+console.log('\n▶ Piatto della stampa prova');
+{
+  const s = buildSolids(wasm, { ...DEFAULT_PARAMS, ...MINI });
+  try {
+    const plate = buildMiniPlate(s);
+    const b = plate.boundingBox();
+    const sx = b.max[0] - b.min[0];
+    const sy = b.max[1] - b.min[1];
+    ok(near(b.min[2], 0, 1e-6) && sx <= BED - 10 && sy <= BED - 10, `un solo piatto: ${sx.toFixed(1)} × ${sy.toFixed(1)} mm`);
+    // base, coperchio, asta e anello staccati; le sedi dei magneti sono gusci negativi
+    const parts = plate.decompose();
+    const bodies = parts.map((x) => x.volume()).filter((v) => v > 0).sort((x, y) => y - x);
+    for (const x of parts) x.delete();
+    ok(bodies.length === 4 && near(bodies[2], s.rod.volume(), 1e-3) && near(bodies[3], s.ring.volume(), 1e-3),
+      `scatola, asta e anello separati sul piatto (${bodies.length} corpi)`);
+  } finally {
+    s.dispose();
+  }
+}
+
+console.log(`\nStampa prova: scatola chiusa ${dm.width.toFixed(1)} × ${dm.length.toFixed(1)} × ${dm.H.toFixed(1)} mm, aperta ${dm.openLength.toFixed(1)} mm, asta da ${dm.rodLen.toFixed(0)} mm.`);
+console.log(`Scatola chiusa ${d0.width.toFixed(1)} × ${d0.length.toFixed(1)} × ${d0.H.toFixed(1)} mm (+ ${DEFAULT_PARAMS.rodTail} mm di code), aperta ${d0.openLength.toFixed(1)} mm. Pausa magneti a Z = ${d0.pauseZ.toFixed(2)} mm.`);
 console.log(failures ? `\n${failures} verifiche fallite` : '\nTutte le verifiche superate');
 process.exit(failures ? 1 : 0);

@@ -2,7 +2,7 @@
 // booleane CSG esatte con mesh sempre chiuse (manifold), quindi STL pronti per
 // Bambu Studio. Gira nel browser (import map) e in Node (node_modules).
 import Module from 'manifold-3d';
-import { computeDims, MAGNET, COLORS, BOX_COLOR, ROD_COLOR } from './params.js';
+import { computeDims, MAGNET, MINI, COLORS, BOX_COLOR, ROD_COLOR } from './params.js';
 
 let wasmPromise = null;
 export function loadManifold() {
@@ -384,11 +384,33 @@ function buildTestPlate(s) {
   return T(Manifold.compose(parts));
 }
 
+// Stampa prova in un solo piatto: scatola mini aperta a 180°, accanto un'asta
+// distesa e un anello in piedi. `s` sono i solidi costruiti con i parametri MINI.
+export function buildMiniPlate(s) {
+  const { d, T } = s;
+  const { Manifold } = s.wasm;
+  const box = T(Manifold.compose([s.base, openLid(s, s.lid, 180)]));
+  const bb = box.boundingBox();
+  const gap = 5;
+
+  // distesa su una faccia come nel piatto delle aste, poi girata lungo Y
+  const rodFlat = T(T(T(s.rodZ.rotate([0, 90, 0])).translate([0, 0, d.p.rodAF / 2])).rotate([0, 0, 90]));
+  const rb = rodFlat.boundingBox();
+  const rod = T(rodFlat.translate([bb.max[0] + gap - rb.min[0], bb.min[1] + gap - rb.min[1], 0]));
+  const rodBox = rod.boundingBox();
+  const xRod = (rodBox.min[0] + rodBox.max[0]) / 2;
+  const ring = T(s.ringZ.translate([xRod, rodBox.max[1] + gap + d.p.ringD / 2, 0]));
+
+  return T(Manifold.compose([box, rod, ring]));
+}
+
 // Modello per il viewer e per l'esportazione.
 export function buildModel(wasm, params) {
   const s = buildSolids(wasm, params);
+  const sm = buildSolids(wasm, { ...params, ...MINI });
   try {
     const layouts = buildPrintLayouts(s);
+    const mini = buildMiniPlate(sm);
     const parts = [
       { id: 'scatola', name: 'Scatola print in place', color: BOX_COLOR, file: 'scatola.stl', qty: 1,
         print: meshData(layouts.box), stats: stats(layouts.box),
@@ -405,9 +427,13 @@ export function buildModel(wasm, params) {
       { id: 'prova', name: 'Piatto di prova', color: '#c9c3b8', file: 'piatto_di_prova.stl', qty: 1,
         print: meshData(layouts.testPlate), stats: stats(layouts.testPlate),
         note: '3 anelli, spezzone d\'asta, 2 sedi, binario da 3, nocca di cerniera.' },
+      { id: 'mini', name: 'Stampa prova', color: BOX_COLOR, file: 'stampa_prova.stl', qty: 1,
+        print: meshData(mini), stats: stats(mini),
+        note: 'Scatola mini da 3 binari × 3 anelli, un\'asta e un anello, tutto in un piatto.' },
     ];
     return {
       dims: s.d,
+      miniDims: sm.d,
       params: { ...params },
       meshes: {
         base: meshData(s.base),
@@ -421,5 +447,6 @@ export function buildModel(wasm, params) {
     };
   } finally {
     s.dispose();
+    sm.dispose();
   }
 }

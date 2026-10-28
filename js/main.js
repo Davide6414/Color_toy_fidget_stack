@@ -182,6 +182,10 @@ function download(name, data, type) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 const fileName = (f) => (isDefault() ? f : f.replace('.stl', '_custom.stl'));
+function downloadPart(id) {
+  const part = model.parts.find((p) => p.id === id);
+  download(fileName(part.file), toBinarySTL(part.print, part.id), 'model/stl');
+}
 function downloadZip() {
   const files = {};
   for (const part of model.parts) files[fileName(part.file)] = toBinarySTL(part.print, part.id);
@@ -192,8 +196,10 @@ function downloadZip() {
 // ------------------------------------------------------------------ pezzi
 function renderParts() {
   const d = model.dims;
+  const m = model.miniDims;
   const P = (id) => model.parts.find((p) => p.id === id);
   const g = (part) => (part.stats.volume / 1000) * PLA;
+  const [miniX, miniY] = P('mini').stats.size;
   const cards = [
     {
       title: 'Scatola print in place', qty: '×1', swatch: `--sw:${P('scatola').color}`,
@@ -230,6 +236,13 @@ function renderParts() {
       stats: ['per tarare i giochi'],
       anim: 'stampa', files: ['prova'],
     },
+    {
+      title: 'Stampa prova', qty: '×1', swatch: `--sw:${P('mini').color}`,
+      meta: `Scatola mini ${num(m.width)} × ${num(m.length)} × ${num(m.H)} mm · un piatto ${num(miniX, 0)} × ${num(miniY, 0)} mm`,
+      text: `La stessa scatola con ${m.n} binari da ${m.p.capacity} anelli, più un'asta da ${num(m.rodLen, 0)} mm e un anello. Anelli, aste, giochi, cerniera, linguette e magneti sono a misura vera: è il meccanismo completo in piccolo, da provare prima della scatola grande.`,
+      stats: [`≈ ${num(g(P('mini')), 0)} g pieno`, `pausa a Z ${num(m.pauseZ, 1)} mm`, '4 magneti'],
+      files: ['mini'],
+    },
   ];
   const list = $('#part-list');
   list.innerHTML = '';
@@ -248,15 +261,12 @@ function renderParts() {
       <p>${c.text}</p>
       <ul class="stats">${c.stats.map((s) => `<li>${s}</li>`).join('')}</ul>
       <div class="actions">
-        <button class="btn" data-part-anim="${c.anim}"><svg class="ico"><use href="#i-play"/></svg>Funzionamento</button>
+        ${c.anim ? `<button class="btn" data-part-anim="${c.anim}"><svg class="ico"><use href="#i-play"/></svg>Funzionamento</button>` : ''}
         ${fileButtons}
       </div>`;
     list.append(el);
   }
-  list.querySelectorAll('[data-stl]').forEach((b) => b.addEventListener('click', () => {
-    const part = P(b.dataset.stl);
-    download(fileName(part.file), toBinarySTL(part.print, part.id), 'model/stl');
-  }));
+  list.querySelectorAll('[data-stl]').forEach((b) => b.addEventListener('click', () => downloadPart(b.dataset.stl)));
   list.querySelectorAll('[data-part-anim]').forEach((b) => b.addEventListener('click', () => { unlockAudio(); director.run(b.dataset.partAnim); }));
 }
 
@@ -341,7 +351,17 @@ function rebuild() {
 // ------------------------------------------------------------------ guida di stampa
 function renderPrintGuide() {
   const d = model.dims;
+  const m = model.miniDims;
+  const [miniX, miniY] = model.parts.find((p) => p.id === 'mini').stats.size;
   const checks = store.get('checklist', {});
+  const miniItems = [
+    ['mini-cerniera', 'Cerniera: si sblocca e il coperchio gira da chiuso a 180°.'],
+    ['mini-chiusura', 'Chiusura: le linguette scattano e tengono chiuso mentre agiti.'],
+    ['mini-asta', 'Asta: entra dalla tacca, attraversa l\'anello disteso nel binario e si innesta nella barra.'],
+    ['mini-magneti', 'Fermo a 90°: i magneti tengono il coperchio aperto con l\'asta in piedi.'],
+    ['mini-anello', 'Anello: a 90° scivola fino alla barra; richiudendo torna disteso nel binario.'],
+  ];
+  const checklist = (list) => list.map(([k, t]) => `<li><label><input type="checkbox" data-check="${k}" ${checks[k] ? 'checked' : ''}><span>${t}</span></label></li>`).join('');
   const items = [
     ['anelli', '3 anelli: scorrono sullo spezzone d\'asta senza forzare e senza ballare.'],
     ['asta', 'Spezzone d\'asta da 30 mm: la punta entra negli anelli e nelle sedi.'],
@@ -358,6 +378,7 @@ function renderPrintGuide() {
         <tr><td>Anelli</td><td>In piedi, foro verticale, ${d.p.capacity} per piatto</td><td>Un piatto per colore, oppure i ${4 * d.p.capacity} insieme con l'AMS</td></tr>
         <tr><td>Aste</td><td>Distese su una faccia dell'esagono</td><td>Strati lungo tutta la lunghezza</td></tr>
         <tr><td>Piatto di prova</td><td>Come la scatola</td><td>Prima della scatola, per tarare i giochi</td></tr>
+        <tr><td>Stampa prova</td><td>Un piatto: scatola mini aperta a 180°, asta distesa, anello in piedi (${num(miniX, 0)} × ${num(miniY, 0)} mm)</td><td>Dopo il piatto di prova. Pausa a Z = ${num(m.pauseZ, 1)} mm per 4 magneti</td></tr>
       </tbody>
     </table></div>
     <p>Gli STL sono già orientati. Nessun pezzo richiede supporti o brim.</p>
@@ -387,7 +408,11 @@ function renderPrintGuide() {
     </ol>
 
     <h2>Piatto di prova</h2>
-    <ul class="checklist">${items.map(([k, t]) => `<li><label><input type="checkbox" data-check="${k}" ${checks[k] ? 'checked' : ''}><span>${t}</span></label></li>`).join('')}</ul>
+    <ul class="checklist">${checklist(items)}</ul>
+
+    <h2>Stampa prova</h2>
+    <p>La scatola mini ha ${m.n} binari da ${m.p.capacity} anelli e misura ${num(m.width, 1)} × ${num(m.length, 1)} mm, ma anelli, aste, giochi, cerniera, linguette e magneti sono quelli veri. Si stampa in un piatto con un'asta e un anello, con la stessa pausa a ${num(m.pauseZ, 1)} mm. Non è in scala 1:2: l'asta diventerebbe un esagono da 2 mm e i magneti non entrerebbero nelle pareti.</p>
+    <ul class="checklist">${checklist(miniItems)}</ul>
 
     <h2>Se qualcosa non va</h2>
     <ul>
@@ -475,6 +500,7 @@ function bindUI() {
   });
 
   $('#btn-zip').addEventListener('click', downloadZip);
+  $('#btn-mini').addEventListener('click', () => downloadPart('mini'));
   $('#btn-zip-params').addEventListener('click', downloadZip);
   $('#btn-reset-params').addEventListener('click', () => { params = { ...DEFAULT_PARAMS }; renderParams(); scheduleRebuild(); });
 
@@ -502,6 +528,7 @@ async function start() {
     viewer.setPlayEnabled(true);
     $('#loading').hidden = true;
     $('#btn-zip').disabled = false;
+    $('#btn-mini').disabled = false;
     syncToolbar();
     updateGameUI();
     analyse();

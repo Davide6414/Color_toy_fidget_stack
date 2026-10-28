@@ -322,12 +322,17 @@ export class Viewer {
       { label: 'Anelli', parts: COLORS.map((c, k) => ({ id: 'anelli', color: c.hex, dx: 0, dy: k * 26 })) },
       { label: 'Aste', parts: [{ id: 'aste', color: ROD_COLOR }] },
       { label: 'Piatto di prova', parts: [{ id: 'prova', color: '#c9d6de' }] },
+      { label: 'Stampa prova', parts: [{ id: 'mini', color: BOX_COLOR }] },
     ];
     const plateMat = new THREE.MeshStandardMaterial({ color: '#2b2f36', roughness: 0.8 });
     const gridMat = new THREE.LineBasicMaterial({ color: '#4a525d' });
+    // 3 piatti per fila, l'ultima fila centrata
+    const cols = 3;
     beds.forEach((b, i) => {
       const g = new THREE.Group();
-      g.position.set(((i % 2) - 0.5) * (bed + 30), (0.5 - Math.floor(i / 2)) * (bed + 30), 0);
+      const row = Math.floor(i / cols);
+      const inRow = Math.min(cols, beds.length - row * cols);
+      g.position.set((i % cols - (inRow - 1) / 2) * (bed + 30), (0.5 - row) * (bed + 30), 0);
       const plate = new THREE.Mesh(new THREE.BoxGeometry(bed, bed, 2), plateMat);
       plate.position.z = -1;
       g.add(plate);
