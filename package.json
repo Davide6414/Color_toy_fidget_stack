@@ -1,0 +1,18 @@
+{
+  "name": "color-fidget-stack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Color Fidget Stack: giocattolo antistress a dischi colorati stampabile in 3D, con viewer web e STL parametrici",
+  "type": "module",
+  "scripts": {
+    "test": "node tools/check.mjs",
+    "build:stl": "node tools/build-stl.mjs",
+    "build": "node tools/build-stl.mjs && node tools/build-site.mjs",
+    "serve": "python3 -m http.server 8080"
+  },
+  "devDependencies": {
+    "fflate": "^0.8.2",
+    "manifold-3d": "^3.5.4",
+    "three": "^0.186.1"
+  }
+}

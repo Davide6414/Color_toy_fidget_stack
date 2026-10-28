@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Color Fidget Stack</title>
+  <meta name="description" content="Giocattolo antistress a dischi colorati stampabile in 3D: modelli 3D interattivi, animazioni del funzionamento ed export STL parametrico.">
+  <meta property="og:title" content="Color Fidget Stack">
+  <meta property="og:description" content="Tre dischi traslucidi ciano, magenta e giallo che scattano ogni 30° e mescolano i colori. Modelli STL parametrici e animazioni.">
+  <meta property="og:image" content="https://davide6414.github.io/Color_toy_fidget_stack/assets/preview.jpg">
+  <meta name="theme-color" content="#f6f5f2">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
+      "manifold-3d": "https://cdn.jsdelivr.net/npm/manifold-3d@3.5.4/manifold.js",
+      "fflate": "https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z" fill="currentColor"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.05-4.95M19 4v4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="matrix(-1 0 0 1 24 0)"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.05-4.95M19 4v4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z" fill="currentColor"/><path d="m16 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  </svg>
+
+  <header class="topbar">
+    <a class="brand" href="./">
+      <svg class="logo" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="15" cy="15" r="10.5" fill="#2cc3ee" style="mix-blend-mode:multiply"/>
+        <circle cx="25" cy="15" r="10.5" fill="#f0479f" style="mix-blend-mode:multiply"/>
+        <circle cx="20" cy="24" r="10.5" fill="#ffd23f" style="mix-blend-mode:multiply"/>
+      </svg>
+      <span class="brand-text">
+        <strong>Color Fidget Stack</strong>
+        <small>Giocattolo antistress a dischi colorati · stampabile in 3D</small>
+      </span>
+    </a>
+    <div class="top-actions">
+      <button id="btn-zip" class="btn primary" disabled>
+        <svg class="ico"><use href="#i-download"/></svg><span>Tutti gli STL</span>
+      </button>
+      <a class="btn" href="https://github.com/Davide6414/Color_toy_fidget_stack" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="stage" aria-label="Vista 3D">
+      <div id="viewport" class="viewport"></div>
+
+      <div class="toolbar" role="toolbar" aria-label="Vista">
+        <div class="seg" role="group" aria-label="Montato o esploso">
+          <button data-view="assembled" aria-pressed="true">Montato</button>
+          <button data-view="exploded" aria-pressed="false">Esploso</button>
+        </div>
+        <button class="tool" id="btn-section" aria-pressed="false" title="Taglia il modello a metà (S)">Sezione</button>
+        <button class="tool" id="btn-top" title="Guarda i colori dall'alto">Dall'alto</button>
+        <button class="tool" id="btn-home" title="Vista iniziale">Reset</button>
+        <button class="tool icon" id="btn-sound" aria-pressed="true" title="Suono dei clic">
+          <svg class="ico"><use href="#i-sound"/></svg>
+        </button>
+      </div>
+
+      <div class="caption" id="caption" hidden>
+        <div class="caption-head">
+          <span id="caption-step" class="caption-step"></span>
+          <button class="btn small" id="btn-stop"><svg class="ico"><use href="#i-stop"/></svg>Stop</button>
+        </div>
+        <h3 id="caption-title"></h3>
+        <p id="caption-text"></p>
+      </div>
+
+      <div class="legend" id="legend" aria-label="Legenda dei colori"></div>
+      <p class="hint" id="hint">Trascina un disco per ruotarlo · tasti <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> · <kbd>Spazio</kbd> = trottola</p>
+
+      <div class="loading" id="loading">
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="loading-text">Generazione dei modelli 3D…</p>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <nav class="tabs" role="tablist">
+        <button role="tab" id="t-parts" aria-controls="tab-parts" aria-selected="true">Parti</button>
+        <button role="tab" id="t-anim" aria-controls="tab-anim" aria-selected="false">Animazioni</button>
+        <button role="tab" id="t-params" aria-controls="tab-params" aria-selected="false">Parametri</button>
+        <button role="tab" id="t-print" aria-controls="tab-print" aria-selected="false">Stampa</button>
+      </nav>
+
+      <section class="tab" id="tab-parts" role="tabpanel" aria-labelledby="t-parts">
+        <p class="intro">
+          Una pila di <strong>tre dischi traslucidi</strong> — giallo, magenta e ciano — infilati su un mozzo
+          scanalato. Ogni disco <strong>scatta ogni 30°</strong> grazie a due bracci elastici; le finestre aperte
+          si sovrappongono e i filtri si sommano come in una stampa a colori. In cima, un
+          <strong>cappuccio a scatto</strong> tiene tutto insieme e gira come una trottola.
+        </p>
+        <p class="note">5 pezzi · nessun supporto · nessuna vite o colla · Ø 60 mm.</p>
+        <div id="part-list" class="cards"></div>
+      </section>
+
+      <section class="tab" id="tab-anim" role="tabpanel" aria-labelledby="t-anim" hidden>
+        <h2>Come funziona</h2>
+        <div class="anim-list" id="anim-list">
+          <button class="anim" data-anim="assembly"><svg class="ico"><use href="#i-play"/></svg><span><strong>Montaggio completo</strong><small>Base, tre dischi e aggancio del cappuccio, passo per passo.</small></span></button>
+          <button class="anim" data-anim="base"><svg class="ico"><use href="#i-play"/></svg><span><strong>Base e mozzo</strong><small>Scanalature, anello distanziale e foro con gradino conico.</small></span></button>
+          <button class="anim" data-anim="disc" data-arg="1"><svg class="ico"><use href="#i-play"/></svg><span><strong>Scatto dei dischi</strong><small>Il braccio elastico si flette e il dentino cade nella scanalatura.</small></span></button>
+          <button class="anim" data-anim="cap"><svg class="ico"><use href="#i-play"/></svg><span><strong>Aggancio del cappuccio</strong><small>Le 4 alette si chiudono nel foro e scattano sotto il gradino.</small></span></button>
+          <button class="anim" data-anim="mix"><svg class="ico"><use href="#i-play"/></svg><span><strong>Miscela dei colori</strong><small>Vista dall'alto: rotazioni casuali e colori sottrattivi.</small></span></button>
+          <button class="anim" data-anim="disassembly"><svg class="ico"><use href="#i-play"/></svg><span><strong>Smontaggio</strong><small>Una penna dal basso sgancia il cappuccio; poi i dischi si sfilano.</small></span></button>
+        </div>
+
+        <h2>Gioca</h2>
+        <div id="disc-controls" class="disc-controls"></div>
+        <div class="row">
+          <button class="btn" id="btn-spin">Fai girare il cappuccio</button>
+          <button class="btn" id="btn-shuffle">Mescola</button>
+        </div>
+        <label class="slider">
+          <span>Velocità animazioni <output id="speed-out">1×</output></span>
+          <input type="range" id="speed" min="0.5" max="2" step="0.25" value="1">
+        </label>
+        <label class="slider">
+          <span>Amplificazione deformazioni <output id="exa-out">×3</output></span>
+          <input type="range" id="exaggerate" min="1" max="5" step="1" value="3">
+        </label>
+        <p class="note">Le flessioni reali sono di pochi decimi di millimetro: qui sono amplificate per renderle visibili. A ×1 vedi il movimento vero.</p>
+      </section>
+
+      <section class="tab" id="tab-params" role="tabpanel" aria-labelledby="t-params" hidden>
+        <h2>Parametri di stampa</h2>
+        <p class="note">Il modello è parametrico: cambia i giochi per adattarlo alla tua stampante. Il 3D e gli STL scaricati si aggiornano subito.</p>
+        <div id="param-list" class="params"></div>
+        <div class="row">
+          <button class="btn" id="btn-reset-params">Ripristina valori</button>
+          <button class="btn primary" id="btn-zip-params"><svg class="ico"><use href="#i-download"/></svg>STL con questi valori</button>
+        </div>
+        <h2>Quote principali</h2>
+        <dl id="dims" class="dims"></dl>
+      </section>
+
+      <section class="tab prose" id="tab-print" role="tabpanel" aria-labelledby="t-print" hidden>
+        <h2>Cosa stampare</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Pezzo</th><th>Filamento</th><th>Orientamento</th></tr></thead>
+            <tbody>
+              <tr><td>Base</td><td>Bianco opaco</td><td>Faccia piana sul piatto, mozzo in alto</td></tr>
+              <tr><td>Dischi ×3</td><td>Traslucido giallo, magenta, ciano</td><td>Faccia piana sul piatto, anello distanziale in alto</td></tr>
+              <tr><td>Cappuccio</td><td>PETG, colore a scelta</td><td>Capovolto: faccia superiore sul piatto, perno in alto</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Gli STL sono già nell'orientamento di stampa. Nessun pezzo richiede supporti.</p>
+
+        <h2>Impostazioni consigliate</h2>
+        <ul>
+          <li>Ugello 0,4 mm, strato 0,2 mm (0,12–0,16 mm per il cappuccio: il dente viene più preciso).</li>
+          <li>Dischi: 3 perimetri, riempimento 100% o "solo perimetri" per avere colori uniformi.</li>
+          <li>Base: 3 perimetri, riempimento 15–20%.</li>
+          <li>Cappuccio: 4 perimetri; le alette vengono comunque piene.</li>
+          <li>Attiva la compensazione del "piede d'elefante" (0,1–0,2 mm): il primo strato dei dischi non deve stringere il foro.</li>
+        </ul>
+
+        <h2>Colori</h2>
+        <p>Per la miscela servono filamenti <strong>traslucidi</strong> (PETG o PLA "transparent/translucent"): più il filtro è sottile, più i colori sono chiari. Lo spessore del filtro si cambia nei <em>Parametri</em>. La base bianca, meglio se lucida, riflette la luce attraverso i dischi.</p>
+
+        <h2>Montaggio</h2>
+        <ol>
+          <li>Rimuovi eventuali sbavature dal foro dei dischi e dal dentino dei bracci.</li>
+          <li>Infila il disco giallo sul mozzo con i dentini allineati a due scanalature, poi il magenta e il ciano.</li>
+          <li>Premi il cappuccio finché senti lo scatto.</li>
+        </ol>
+
+        <h2>Se qualcosa non va</h2>
+        <ul>
+          <li><strong>I dischi girano duri</strong>: aumenta il gioco disco ↔ mozzo o diminuisci la profondità del dentino.</li>
+          <li><strong>Il cappuccio non entra</strong>: diminuisci il sottosquadro dell'aggancio.</li>
+          <li><strong>Il cappuccio esce da solo</strong>: aumenta il sottosquadro o stampa il cappuccio in PETG.</li>
+          <li><strong>Colori troppo scuri</strong>: riduci lo spessore del filtro (es. 0,8 mm).</li>
+        </ul>
+        <p>Smontaggio: infila una penna nel foro sotto la base e spingi il perno verso l'alto.</p>
+      </section>
+    </aside>
+  </main>
+</body>
+</html>
