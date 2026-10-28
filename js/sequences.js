@@ -325,7 +325,7 @@ export const SEQUENCES = {
     s.section = { axis: 'x', value: d.chX[3] };
     s.theta = 0;
     await c.view('sezioneFronte', 900);
-    c.caption(1, 2, 'Foro di guida', `La tacca è larga ${d.notchW.toFixed(1)} mm con il fondo concentrico all'asse del binario. A scatola chiusa il bordo del coperchio la chiude in alto: diventa un foro che guida l'asta.`);
+    c.caption(1, 2, 'Foro di guida', `La tacca è larga ${d.notchW.toFixed(1)} mm con il fondo concentrico all'asse del binario. A scatola chiusa il bordo del coperchio la chiude in alto: diventa un foro che guida l'asta, alto quanto basta perché a 90° gli anelli passino sotto il bordo.`);
     await c.wait(2400);
     c.caption(2, 2, 'La coda esce dall\'alto', 'Aprendo, la coda dell\'asta si solleva dalla tacca aperta in alto. Con meno di 5 mm di larghezza nessun anello può uscirne.');
     await openLid(c, 32, 1800);
@@ -360,7 +360,7 @@ export const SEQUENCES = {
     s.section = { axis: 'x', value: d.chX[2] };
     s.rodPull = s.rodPull.map((_, i) => (i === 2 ? 26 : 0));
     await c.view('barra', 900);
-    c.caption(1, 3, 'Sede esagonale', `Ogni asta si innesta per ${d.seatDepth} mm in una sede esagonale con ${d.p.seatClearance} mm di gioco per lato: entra a mano e resta dritta.`);
+    c.caption(1, 3, 'Sede esagonale', `Ogni asta si innesta per ${d.seatDepth} mm in una sede esagonale con ${d.p.seatClearance} mm di gioco per lato${d.p.ribInterference > 0 ? ' e tre nervature di schiacciamento: entra a mano e non scivola fuori nemmeno in tasca' : ': entra a mano e resta dritta'}.`);
     await c.t(s.rodPull, { 2: 0 }, 1500, ease.out);
     tic(1);
     await c.wait(600);

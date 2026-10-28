@@ -28,7 +28,7 @@ riallinea da sola, senza toccarli uno a uno.
 
 | File | Quantità | Orientamento | Note |
 | --- | --- | --- | --- |
-| [scatola.stl](stl/scatola.stl) | 1 | aperta a 180°, già orientata | print in place; **pausa a Z = 9,4 mm** per i magneti |
+| [scatola.stl](stl/scatola.stl) | 1 | aperta a 180°, già orientata | print in place; **pausa a Z = 6,8 mm** per i magneti |
 | [anelli_x10.stl](stl/anelli_x10.stl) | 4 piatti | in piedi | uno per colore (rosa, verde, giallo, blu), o tutti insieme con l'AMS |
 | [aste_x6.stl](stl/aste_x6.stl) | 1 | distese su una faccia | strati lungo tutta la lunghezza |
 | [piatto_di_prova.stl](stl/piatto_di_prova.stl) | 1 | già orientato | da stampare prima, per tarare i giochi |
@@ -42,7 +42,7 @@ Prima della stampa attaccali a coppie e segna la faccia libera: nelle pareti del
 l'esterno, nelle guance del coperchio verso l'interno. Finita la stampa si piega il coperchio per sbloccare la
 cerniera, si chiude con uno scatto e si infilano le aste.
 
-Ingombro: scatola chiusa 68,4 × 125 × 20 mm (più 5 mm di code delle aste), aperta 234,8 mm.
+Ingombro: scatola chiusa 68,4 × 127,7 × 20 mm (più 5 mm di code delle aste), aperta 234,8 mm.
 
 ## Scelte costruttive
 
@@ -52,14 +52,18 @@ Ingombro: scatola chiusa 68,4 × 125 × 20 mm (più 5 mm di code delle aste), ap
 - **Barra solidale al coperchio.** Ruota sempre davanti all'asse; i binari finiscono 2 mm prima della barra
   per lasciar passare il suo spigolo inferiore.
 - **Fermo a 90° con 4 magneti, una sola pausa.** Due nelle guance posteriori del coperchio, due nelle pareti
-  laterali, tutti con l'asse orizzontale. A 90° si trovano faccia a faccia attraverso le pareti; non c'è una
-  battuta rigida, quindi il coperchio arriva a 180° per la stampa. Le quattro sedi finiscono alla stessa
-  quota di stampa.
+  laterali, tutti con l'asse orizzontale e a 8,9 mm dall'asse della cerniera (la coppia di tenuta cresce col
+  quadrato della distanza). A 90° si trovano faccia a faccia attraverso le pareti; non c'è una battuta
+  rigida, quindi il coperchio arriva a 180° per la stampa. Le quattro sedi finiscono alla stessa quota di
+  stampa.
+- **Sedi con nervature di schiacciamento.** Tre per sede (0,1 mm di interferenza): le aste restano al loro
+  posto anche con la scatola in tasca e non si sfilano quando si toglie un anello.
 - **Chiusura frontale a scatto.** Due linguette elastiche ricavate nel piano del coperchio (si flettono nel
   piano degli strati, 0,6% di deformazione) con un dentino a 45° che scatta in una sede delle pareti.
   Non servono altri magneti né altre pause.
 - **Tacche frontali** con il fondo concentrico all'asse dei binari: a scatola chiusa la gonna del coperchio le
-  chiude in alto e diventano fori di guida; aprendo, lasciano salire la coda delle aste.
+  chiude in alto e diventano fori di guida; aprendo, lasciano salire la coda delle aste. La gonna parte
+  abbastanza in alto da lasciar sfilare gli anelli dalla cima quando le aste sono verticali.
 - **Regole di gioco** come il Color Stack originale (un anello alla volta, solo su asta vuota o sullo stesso
   colore, massimo 10). Nel sito c'è anche la regola libera e un risolutore che dice se la mescolata è
   risolvibile.
@@ -84,8 +88,10 @@ STL della cartella `stl/` e per le verifiche.
 - esclusione delle posizioni sbagliate degli anelli (di traverso, in piedi, sopra un binario pieno);
 - assieme senza compenetrazioni con 10 anelli per binario;
 - rotazione del coperchio da 0° a 180° senza urti, anche con aste e anelli infilati;
-- scatto delle linguette e allineamento dei magneti a 90° con una sola pausa;
-- piatti di stampa entro i 256 mm;
+- anelli che si sfilano dalla cima a 90° senza toccare il coperchio;
+- nervature delle sedi che interferiscono solo dove devono;
+- scatto delle linguette, magneti che entrano nelle sedi e si allineano a 90° con una sola pausa;
+- piatti di stampa entro i 256 mm e senza sbalzi orizzontali;
 - regole e risolutore della partita.
 
 ## Struttura

@@ -12,6 +12,7 @@ export const DEFAULT_PARAMS = {
   slideClearance: 0.3,   // gioco radiale anello–asta
   seatClearance: 0.125,  // gioco per lato asta–sede nella barra
   hingeClearance: 0.3,   // gioco della cerniera print in place
+  ribInterference: 0.1,  // nervature di schiacciamento nelle sedi (0 = solo gioco)
   channels: 6,           // numero di binari (= aste)
   capacity: 10,          // anelli per asta
   rodTail: 5,            // sporgenza della coda dalla parete frontale
@@ -26,6 +27,8 @@ export const PARAM_SPECS = [
     help: 'Per lato. Le aste devono entrare a mano ma restare in piedi.' },
   { key: 'hingeClearance', label: 'Gioco cerniera', min: 0.2, max: 0.5, step: 0.05, unit: 'mm',
     help: 'Se la cerniera esce saldata dalla stampa, aumentalo.' },
+  { key: 'ribInterference', label: 'Nervature nelle sedi', min: 0, max: 0.2, step: 0.05, unit: 'mm',
+    help: 'Tre nervature di schiacciamento per sede trattengono le aste anche nel trasporto. 0 = solo gioco.' },
   { key: 'rodTail', label: 'Sporgenza coda asta', min: 4, max: 10, step: 1, unit: 'mm',
     help: 'Presa per sfilare le aste. Allunga anche le aste.' },
   { key: 'ringChamfer', label: 'Smusso anelli', min: 0.3, max: 0.8, step: 0.1, unit: 'mm',
@@ -96,7 +99,9 @@ export function computeDims(p) {
   d.seatAC = d.seatAF / COS30;                     // ≈ 4,9 tra gli spigoli
   d.seatDepth = 8;
   d.notchW = d.seatAC;
-  d.frontTop = d.zAxis + d.notchW / 2;             // il bordo del coperchio chiude le tacche
+  // La gonna del coperchio chiude le tacche in alto, ma abbastanza in su da
+  // lasciar passare gli anelli quando a 90° si sfilano dalla cima delle aste.
+  d.frontTop = d.zAxis + p.ringD / 2 + p.slideClearance + 0.3;
   d.yBarFront = d.frontT + d.chLen;
   d.ySeatBottom = d.yBarFront + d.seatDepth;
   d.barBackWall = 1.6;
@@ -130,18 +135,21 @@ export function computeDims(p) {
 
   // Fermo a 90°: magneti con asse X. Coperchio dietro-sopra l'asse, base
   // dietro-sotto: a 90° coincidono. Le due sedi finiscono alla stessa quota di
-  // stampa, quindi basta una pausa.
+  // stampa, quindi basta una pausa. Più sono lontani dall'asse più tengono
+  // (la coppia cresce col quadrato della distanza): la sede della base scende
+  // fino a 0,6 mm dal piano.
   const slotR = MAGNET.d / 2 + MAGNET.clearance;
   d.slotR = slotR;
   d.slotW = MAGNET.h + 2 * MAGNET.clearance;
-  d.pauseZ = ceilTo(zH - 3.7 + slotR, LAYER);
+  d.pauseZ = ceilTo(2 * slotR + MAGNET.skin, LAYER);
   d.magA = zH + slotR - d.pauseZ;                  // distanza dall'asse lungo Y e Z
+  d.magRadius = d.magA * Math.SQRT2;
   d.magLid = { y: yH + d.magA, z: zH + d.magA };  // posizione a coperchio chiuso
   d.magBase = { y: yH + d.magA, z: zH - d.magA };
   d.magBaseX = d.innerHalf + MAGNET.skin + d.slotW / 2;
   d.magLidX = d.lidHalf - MAGNET.skin - d.slotW / 2;
   d.cheekW = 5;
-  d.cheekY = 7.6;                                  // sporgenza dietro l'asse
+  d.cheekY = d.magA + 4;                           // sporgenza dietro l'asse (raccordo R4 attorno al magnete)
   d.cheekCut = 2 * d.magA + (slotR + MAGNET.skin) * Math.SQRT2;
   d.yRear = yH + d.cheekY;
 

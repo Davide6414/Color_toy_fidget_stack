@@ -203,8 +203,8 @@ function renderParts() {
       anim: 'cerniera', files: ['scatola'],
     },
     {
-      title: 'Anelli', qty: '×40', swatchClass: 'rings',
-      meta: `Ø ${num(d.p.ringD, 0)} × ${num(d.p.ringL, 0)} mm, foro Ø ${num(d.hole, 2)} · 4 colori × 10`,
+      title: 'Anelli', qty: `×${4 * d.p.capacity}`, swatchClass: 'rings',
+      meta: `Ø ${num(d.p.ringD, 0)} × ${num(d.p.ringL, 0)} mm, foro Ø ${num(d.hole, 2)} · 4 colori × ${d.p.capacity}`,
       text: 'Più lunghi che larghi: è questo che li costringe a distendersi nei binari col foro in asse. Smusso esterno sui due bordi, invito sul foro.',
       stats: [`≈ ${num(g(P('anello')), 2)} g l'uno`, 'in piedi, foro verticale'],
       anim: 'binari', files: ['anelli', 'anello'],
@@ -212,14 +212,14 @@ function renderParts() {
     {
       title: 'Aste', qty: '×6', swatch: `--sw:${P('aste').color}`,
       meta: `Esagono ${num(d.p.rodAF, 0)} mm tra le facce · lunghe ${num(d.rodLen, 0)} mm`,
-      text: `Punta conica di ${num(d.p.rodTip, 0)} mm che entra per prima e si innesta per ${num(d.seatDepth, 0)} mm nella barra; coda liscia che sporge ${num(d.p.rodTail, 0)} mm dalla parete per sfilarla.`,
+      text: `Punta conica di ${num(d.p.rodTip, 0)} mm che entra per prima e si innesta per ${num(d.seatDepth, 0)} mm nella barra${d.p.ribInterference > 0 ? ', dove tre nervature di schiacciamento la trattengono anche nel trasporto' : ''}; coda liscia che sporge ${num(d.p.rodTail, 0)} mm dalla parete per sfilarla.`,
       stats: [`≈ ${num(g(P('asta')), 1)} g l'una`, 'distese su una faccia'],
       anim: 'barra', files: ['aste', 'asta'],
     },
     {
       title: 'Magneti al neodimio', qty: '×4', swatch: '--sw:#aeb4bd',
       meta: `Ø ${MAGNET.d} × ${MAGNET.h} mm (N35 o superiore), da acquistare`,
-      text: 'Due nelle guance posteriori del coperchio e due nelle pareti laterali: tengono il coperchio aperto a 90°. Si infilano durante una sola pausa di stampa.',
+      text: `Due nelle guance posteriori del coperchio e due nelle pareti laterali, a ${num(d.magRadius, 1)} mm dall'asse: tengono il coperchio aperto a 90°. Si infilano durante una sola pausa di stampa, a Z = ${num(d.pauseZ, 1)} mm.`,
       stats: ['unico montaggio', 'attenzione alla polarità'],
       anim: 'magneti', files: [],
     },
@@ -300,6 +300,8 @@ function renderDims() {
     ['Scatola chiusa', `${num(d.width, 1)} × ${num(d.length, 1)} × ${num(d.H, 1)} mm`],
     ['Scatola aperta (stampa)', `${num(d.width, 1)} × ${num(d.openLength, 1)} mm`],
     ['Asse cerniera', `y ${num(d.yHinge, 1)} · z ${num(d.zHinge, 1)} mm (metà altezza)`],
+    ['Nervature nelle sedi', d.p.ribInterference > 0 ? `3 per sede, ${num(d.p.ribInterference, 2)} mm di interferenza` : 'nessuna (solo gioco)'],
+    ['Magneti del fermo', `a ${num(d.magRadius, 1)} mm dall'asse, sedi a D`],
     ['Pausa per i magneti', `Z = ${num(d.pauseZ, 2)} mm`],
     ['Flessione linguette', `${num(d.tongue.nub - d.p.hingeClearance, 2)} mm, ${num(d.tongueStrain * 100, 2)}%`],
   ];
@@ -353,7 +355,7 @@ function renderPrintGuide() {
       <thead><tr><th>Piatto</th><th>Orientamento</th><th>Note</th></tr></thead>
       <tbody>
         <tr><td>Scatola</td><td>Aperta a 180°: base col fondo giù, coperchio con la faccia esterna giù (${num(d.width, 0)} × ${num(d.openLength, 0)} mm)</td><td>Pausa a Z = ${num(d.pauseZ, 1)} mm per i 4 magneti</td></tr>
-        <tr><td>Anelli</td><td>In piedi, foro verticale, 10 per piatto</td><td>Un piatto per colore, oppure i 40 insieme con l'AMS</td></tr>
+        <tr><td>Anelli</td><td>In piedi, foro verticale, ${d.p.capacity} per piatto</td><td>Un piatto per colore, oppure i ${4 * d.p.capacity} insieme con l'AMS</td></tr>
         <tr><td>Aste</td><td>Distese su una faccia dell'esagono</td><td>Strati lungo tutta la lunghezza</td></tr>
         <tr><td>Piatto di prova</td><td>Come la scatola</td><td>Prima della scatola, per tarare i giochi</td></tr>
       </tbody>
