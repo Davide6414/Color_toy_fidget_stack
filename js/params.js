@@ -1,115 +1,158 @@
-// Parametri del progetto Color Fidget Stack.
-// Unità: millimetri e gradi. Questo modulo non dipende da three.js né dal DOM,
-// così può essere usato sia nel browser sia negli script Node (tools/).
+// Gioco ordina-colori: parametri primari e quote derivate.
+// Unità: millimetri. Sistema di riferimento CAD: X larghezza (centrata),
+// Y dalla faccia frontale (Y = 0) verso la cerniera, Z in alto (Z = 0 piano).
+// Modulo senza dipendenze: lo usano il browser e gli script Node in tools/.
 
-export const POSITIONS = 12; // scatti per giro (30° l'uno)
-
-// Valori regolabili dal pannello "Parametri" (e usati per gli STL in /stl).
 export const DEFAULT_PARAMS = {
-  clearance: 0.3,        // gioco radiale foro disco ↔ mozzo
-  pinClearance: 0.1,     // gioco radiale perno cappuccio ↔ foro mozzo
-  barbInterference: 0.35, // quanto il dente di aggancio sporge oltre il foro
-  nubDepth: 0.5,         // quanto il dentino del braccio entra nella scanalatura
-  filterThickness: 1.2,  // spessore della zona colorata (finestre)
-  axialGap: 0.4,         // altezza degli anelli distanziali tra i dischi
-  segments: 128,         // risoluzione dei cerchi
+  ringD: 8,              // diametro esterno anello
+  ringL: 10,             // lunghezza anello
+  ringChamfer: 0.6,      // smusso esterno sui due bordi
+  holeChamfer: 0.3,      // invito sul foro (aiuta la punta dell'asta)
+  rodAF: 4,              // esagono dell'asta, misura tra le facce
+  slideClearance: 0.3,   // gioco radiale anello–asta
+  seatClearance: 0.125,  // gioco per lato asta–sede nella barra
+  hingeClearance: 0.3,   // gioco della cerniera print in place
+  channels: 6,           // numero di binari (= aste)
+  capacity: 10,          // anelli per asta
+  rodTail: 5,            // sporgenza della coda dalla parete frontale
+  rodTip: 3,             // lunghezza della punta conica
+  segments: 64,          // risoluzione dei cerchi
 };
 
 export const PARAM_SPECS = [
-  { key: 'clearance', label: 'Gioco disco ↔ mozzo', min: 0.15, max: 0.5, step: 0.05, unit: 'mm',
-    help: 'Aumenta se i dischi ruotano duri, diminuisci se ballano.' },
-  { key: 'nubDepth', label: 'Profondità dentino (scatto)', min: 0.3, max: 0.6, step: 0.05, unit: 'mm',
-    help: 'Più profondo = scatto più deciso e più duro.' },
-  { key: 'pinClearance', label: 'Gioco perno ↔ foro', min: 0.05, max: 0.3, step: 0.05, unit: 'mm',
-    help: 'Gioco del perno del cappuccio: più alto = gira più libero.' },
-  { key: 'barbInterference', label: 'Sottosquadro aggancio', min: 0.2, max: 0.5, step: 0.05, unit: 'mm',
-    help: 'Più alto = il cappuccio tiene di più ma si inserisce più duro.' },
-  { key: 'filterThickness', label: 'Spessore filtro colore', min: 0.6, max: 2.0, step: 0.1, unit: 'mm',
-    help: 'Più sottile = colori più chiari e luminosi.' },
-  { key: 'axialGap', label: 'Distanziale tra dischi', min: 0.2, max: 0.8, step: 0.1, unit: 'mm',
-    help: 'Spazio verticale tra un disco e l\'altro.' },
-  { key: 'segments', label: 'Risoluzione cerchi', min: 64, max: 256, step: 32, unit: 'seg',
-    help: 'Numero di lati dei cerchi negli STL.' },
+  { key: 'slideClearance', label: 'Gioco anello ↔ asta', min: 0.2, max: 0.45, step: 0.05, unit: 'mm',
+    help: 'Radiale. Più alto se gli anelli scorrono duri sulle aste.' },
+  { key: 'seatClearance', label: 'Gioco asta ↔ sede', min: 0.05, max: 0.25, step: 0.025, unit: 'mm',
+    help: 'Per lato. Le aste devono entrare a mano ma restare in piedi.' },
+  { key: 'hingeClearance', label: 'Gioco cerniera', min: 0.2, max: 0.5, step: 0.05, unit: 'mm',
+    help: 'Se la cerniera esce saldata dalla stampa, aumentalo.' },
+  { key: 'rodTail', label: 'Sporgenza coda asta', min: 4, max: 10, step: 1, unit: 'mm',
+    help: 'Presa per sfilare le aste. Allunga anche le aste.' },
+  { key: 'ringChamfer', label: 'Smusso anelli', min: 0.3, max: 0.8, step: 0.1, unit: 'mm',
+    help: 'Assorbe lo schiacciamento del primo strato.' },
+  { key: 'capacity', label: 'Anelli per asta', min: 6, max: 10, step: 1, unit: '',
+    help: 'Cambia lunghezza di scatola, binari e aste. Oltre 10 la scatola aperta non sta sul piatto della P1S.' },
+  { key: 'segments', label: 'Risoluzione cerchi', min: 32, max: 128, step: 16, unit: 'seg',
+    help: 'Lati dei cerchi negli STL.' },
 ];
 
-// I tre dischi, dal basso verso l'alto. Le finestre sono settori aperti
-// (in gradi, multipli di 30° così i bordi coincidono a ogni scatto).
-export const DISCS = [
-  { id: 'disc-y', name: 'Disco giallo', short: 'Giallo', color: '#ffd23f',
-    filament: 'PETG/PLA traslucido giallo', file: '02_disco_giallo.stl',
-    windows: { count: 6, width: 30, start: 0 } },
-  { id: 'disc-m', name: 'Disco magenta', short: 'Magenta', color: '#f0479f',
-    filament: 'PETG/PLA traslucido magenta', file: '03_disco_magenta.stl',
-    windows: { count: 2, width: 90, start: 0 } },
-  { id: 'disc-c', name: 'Disco ciano', short: 'Ciano', color: '#2cc3ee',
-    filament: 'PETG/PLA traslucido ciano', file: '04_disco_ciano.stl',
-    windows: { count: 3, width: 60, start: 0 } },
+// Colori come nelle foto del Color Stack originale.
+export const COLORS = [
+  { id: 'rosa', name: 'Rosa', hex: '#ef4f95' },
+  { id: 'verde', name: 'Verde', hex: '#86d03b' },
+  { id: 'giallo', name: 'Giallo', hex: '#f8d12d' },
+  { id: 'blu', name: 'Blu', hex: '#3b8fe3' },
 ];
 
-export const BASE_INFO = {
-  id: 'base', name: 'Base con mozzo', color: '#f3f1ec',
-  filament: 'PLA/PETG bianco opaco', file: '01_base.stl',
-};
+export const BOX_COLOR = '#9ed4ee';
+export const ROD_COLOR = '#b9e2f5';
+export const MAGNET = { d: 6, h: 3, clearance: 0.1, skin: 0.6 };
+export const LAYER = 0.2;
 
-export const CAP_INFO = {
-  id: 'cap', name: 'Cappuccio a scatto', color: '#2d3036',
-  filament: 'PETG (consigliato) o PLA, colore a scelta', file: '05_cappuccio.stl',
-};
+const COS30 = Math.cos(Math.PI / 6);
+const ceilTo = (v, step) => Math.ceil(Math.round((v / step) * 1e6) / 1e6) * step;
 
-// Tutte le quote derivate. Cambiando un parametro cambiano solo le quote
-// che ne dipendono: l'assieme resta sempre coerente.
 export function computeDims(p) {
-  const d = {
-    seg: p.segments,
-    positions: POSITIONS,
-    step: 360 / POSITIONS,
+  const d = { p: { ...p }, seg: p.segments };
 
-    // Base
-    baseR: 30, baseH: 6, baseTopChamfer: 1.0, baseBottomChamfer: 0.6,
+  // Anelli e aste
+  d.rodAC = p.rodAF / COS30;                       // 4,62 tra gli spigoli
+  d.hole = d.rodAC + 2 * p.slideClearance;         // foro anello = spigoli + 2 × gioco
+  d.ringWall = (p.ringD - d.hole) / 2;
+  // i due smussi non devono mangiarsi la parete dell'anello
+  d.ringChamfer = Math.min(p.ringChamfer, d.ringWall - 0.5);
+  d.holeChamfer = Math.max(0, Math.min(p.holeChamfer, d.ringWall - d.ringChamfer - 0.3));
 
-    // Mozzo scanalato (fa parte della base)
-    hubR: 8, hubChamfer: 0.5, grooveR: 1.0, grooveOffset: 0.3,
+  // Binari
+  d.chR = p.ringD / 2 + 0.3;                       // raggio binario = D/2 + 0,3
+  d.chW = 2 * d.chR;
+  d.rib = 1.6;
+  d.pitch = d.chW + d.rib;
+  d.floor = 1.2;
+  d.protrusion = 2;                                // l'anello sporge 2 mm sopra il bordo
+  d.chDepth = p.ringD - d.protrusion;
+  d.headroom = (p.ringD + p.ringL) / 2;            // spazio sopra le costole
+  d.chLen = p.capacity * p.ringL + 2;              // lunghezza binario
+  d.n = p.channels;
+  d.chX = Array.from({ length: d.n }, (_, i) => (i - (d.n - 1) / 2) * d.pitch);
 
-    // Anelli distanziali su base e dischi
-    ridgeR0: 11.5, ridgeR1: 12.7, ridgeH: p.axialGap,
+  // Pareti
+  d.frontT = 2;
+  d.sideT = 4.4;                                   // contiene i magneti del fermo a 90°
+  d.lidT = 3.8;
+  d.innerHalf = (d.n * d.chW + (d.n - 1) * d.rib) / 2;
+  d.lidHalf = d.innerHalf - p.hingeClearance;      // il coperchio sta tra le pareti laterali
+  d.outerHalf = d.innerHalf + d.sideT;
 
-    // Dischi colorati
-    discCount: DISCS.length, discR: 28, discT: 3.0, hubZoneR: 15, rimR0: 25.5,
-    filterT: p.filterThickness, windowR0: 16, windowR1: 24.5, windowFillet: 1.5,
-    gripCount: 24, gripR: 1.2, gripDepth: 0.7,
+  // Quote verticali
+  d.ribTop = d.floor + d.chDepth;
+  d.zAxis = d.floor + p.ringD / 2;                 // asse di anelli, aste, tacche e sedi
+  d.zLid = d.ribTop + d.headroom;                  // faccia interna del coperchio
+  d.H = d.zLid + d.lidT;
+  d.zHinge = d.H / 2;                              // a metà altezza: stampa aperta a 180° in piano
 
-    // Bracci elastici con dentino (nel piano del disco)
-    armSpan: 70, armWidth: 1.5, cutW: 0.8, nubR: 0.9, nubDepth: p.nubDepth,
+  // Sedi, tacche, barra
+  d.seatAF = p.rodAF + 2 * p.seatClearance;
+  d.seatAC = d.seatAF / COS30;                     // ≈ 4,9 tra gli spigoli
+  d.seatDepth = 8;
+  d.notchW = d.seatAC;
+  d.frontTop = d.zAxis + d.notchW / 2;             // il bordo del coperchio chiude le tacche
+  d.yBarFront = d.frontT + d.chLen;
+  d.ySeatBottom = d.yBarFront + d.seatDepth;
+  d.barBackWall = 1.6;
+  d.yBarBack = d.ySeatBottom + d.barBackWall;
+  d.zBarBottom = d.floor + p.hingeClearance;
+  d.barChamfer = 1.0;
 
-    // Cappuccio con perno a 4 alette
-    capR: 15, capH: 6, capGap: 0.3, knurlCount: 30, knurlR: 0.8,
-    pinR: 4.0, pinInnerR: 2.2, pinFillet: 0.3, slotW: 1.2,
-    fingerL: 12, fingerRootZ: -1.5, boreChamfer: 0.4,
-  };
+  // Cerniera: nocche alternate coperchio/base dietro la barra
+  d.coneR = 1.8;
+  d.kR = Math.max(3.5, d.coneR + p.hingeClearance * Math.SQRT2 + 1.25);
+  d.yHinge = d.yBarBack + d.kR + p.hingeClearance;
+  const g = p.hingeClearance;
+  const segW = (2 * d.innerHalf - 6 * g) / 5;
+  d.knuckles = ['L', 'B', 'L', 'B', 'L'].map((kind, i) => {
+    const x0 = -d.innerHalf + g + i * (segW + g);
+    return { kind, x0, x1: x0 + segW };
+  });
 
-  d.boreR = d.hubR + p.clearance;
-  d.pitch = d.discT + d.ridgeH;
-  d.discZ = Array.from({ length: d.discCount }, (_, i) => d.baseH + d.ridgeH + i * d.pitch);
-  d.hubTop = d.baseH + d.ridgeH + d.discCount * d.pitch + d.capGap;
+  // Fine dei binari: lo spigolo inferiore della barra ruota attorno all'asse
+  // e deve passare sopra la testa delle costole.
+  const yH = d.yHinge;
+  const zH = d.zHinge;
+  const rho = Math.max(
+    Math.hypot(yH - d.yBarFront, zH - (d.zBarBottom + d.barChamfer)),
+    Math.hypot(yH - (d.yBarFront + d.barChamfer), zH - d.zBarBottom),
+  );
+  d.yChEnd = yH - Math.sqrt((rho + 0.4) ** 2 - (zH - d.ribTop) ** 2);
 
-  d.slotR0 = d.boreR + d.armWidth;
-  d.slotR1 = d.slotR0 + Math.max(0.8, d.nubDepth + 0.3);
-  d.nubCenterR = d.hubR - d.nubDepth + d.nubR;
+  // Aste
+  d.rodLen = p.rodTail + d.frontT + d.chLen + d.seatDepth;
 
-  // Aggancio: profilo del dente (quote locali del cappuccio, z=0 = faccia inferiore)
-  d.boreNarrowR = d.pinR + p.pinClearance;
-  d.barbR = d.boreNarrowR + p.barbInterference;
-  d.boreWideR = Math.max(5.0, d.barbR + 0.3);
-  d.tipR = d.pinR - 0.6;
-  d.tipZ = d.fingerRootZ - d.fingerL;
-  d.barbLowZ = d.tipZ + (d.barbR - d.tipR);      // fine dell'invito a 45°
-  d.barbHighZ = d.barbLowZ + 0.55;
-  d.barbTopZ = d.barbHighZ + (d.barbR - d.pinR); // ritorno a 45°
+  // Fermo a 90°: magneti con asse X. Coperchio dietro-sopra l'asse, base
+  // dietro-sotto: a 90° coincidono. Le due sedi finiscono alla stessa quota di
+  // stampa, quindi basta una pausa.
+  const slotR = MAGNET.d / 2 + MAGNET.clearance;
+  d.slotR = slotR;
+  d.slotW = MAGNET.h + 2 * MAGNET.clearance;
+  d.pauseZ = ceilTo(zH - 3.7 + slotR, LAYER);
+  d.magA = zH + slotR - d.pauseZ;                  // distanza dall'asse lungo Y e Z
+  d.magLid = { y: yH + d.magA, z: zH + d.magA };  // posizione a coperchio chiuso
+  d.magBase = { y: yH + d.magA, z: zH - d.magA };
+  d.magBaseX = d.innerHalf + MAGNET.skin + d.slotW / 2;
+  d.magLidX = d.lidHalf - MAGNET.skin - d.slotW / 2;
+  d.cheekW = 5;
+  d.cheekY = 7.6;                                  // sporgenza dietro l'asse
+  d.cheekCut = 2 * d.magA + (slotR + MAGNET.skin) * Math.SQRT2;
+  d.yRear = yH + d.cheekY;
 
-  // Gradino conico nel foro della base (quote di assieme)
-  d.ledgeZ = d.hubTop + d.barbTopZ;
-  d.wideTopZ = d.ledgeZ - (d.boreWideR - d.boreNarrowR);
+  // Chiusura frontale: linguette elastiche nel piano del coperchio
+  d.tongue = { b: 2.5, slot: 0.8, y0: 3.0, y1: 24.0, nub: 0.8, nubY: [4.0, 8.0], nubZ: [d.zLid + 0.4, d.zLid + 2.6] };
+  d.tongueStrain = (1.5 * d.tongue.b * (d.tongue.nub - p.hingeClearance)) / (d.tongue.y1 - 6) ** 2;
+  d.camChamfer = 0.6;
 
-  d.totalH = d.hubTop + d.capH;
+  // Ingombri
+  d.length = d.yRear;
+  d.width = 2 * d.outerHalf;
+  d.openLength = 2 * yH;
   return d;
 }

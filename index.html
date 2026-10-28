@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Color Fidget Stack</title>
-  <meta name="description" content="Giocattolo antistress a dischi colorati stampabile in 3D: modelli 3D interattivi, animazioni del funzionamento ed export STL parametrico.">
-  <meta property="og:title" content="Color Fidget Stack">
-  <meta property="og:description" content="Tre dischi traslucidi ciano, magenta e giallo che scattano ogni 30° e mescolano i colori. Modelli STL parametrici e animazioni.">
+  <title>Ordina-colori</title>
+  <meta name="description" content="Gioco di ordinamento stampabile in 3D: 40 anelli in 4 colori su 6 aste. La scatola mescola e riallinea gli anelli da sola. Modelli 3D, animazioni e STL per Bambu Lab P1S.">
+  <meta property="og:title" content="Ordina-colori – gioco stampabile in 3D">
+  <meta property="og:description" content="Agita la scatola, reinfila le aste, apri il coperchio e riordina 40 anelli. Una stampa print in place, nessun supporto.">
   <meta property="og:image" content="https://davide6414.github.io/Color_toy_fidget_stack/assets/preview.jpg">
-  <meta name="theme-color" content="#f6f5f2">
+  <meta name="theme-color" content="#eef3f6">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
   <script type="importmap">
@@ -28,8 +28,9 @@
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z" fill="currentColor"/></symbol>
     <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor"/></symbol>
-    <symbol id="i-left" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.05-4.95M19 4v4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="matrix(-1 0 0 1 24 0)"/></symbol>
-    <symbol id="i-right" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.05-4.95M19 4v4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7 4 12l5 5M4.5 12H14a5.5 5.5 0 0 1 0 11h-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 -3)"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-shake" viewBox="0 0 24 24"><path d="M7 4h10v16H7zM3.5 8v8M20.5 8v8M1 10.5v3M23 10.5v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
     <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z" fill="currentColor"/><path d="m16 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
   </svg>
@@ -37,19 +38,18 @@
   <header class="topbar">
     <a class="brand" href="./">
       <svg class="logo" viewBox="0 0 40 40" aria-hidden="true">
-        <circle cx="15" cy="15" r="10.5" fill="#2cc3ee" style="mix-blend-mode:multiply"/>
-        <circle cx="25" cy="15" r="10.5" fill="#f0479f" style="mix-blend-mode:multiply"/>
-        <circle cx="20" cy="24" r="10.5" fill="#ffd23f" style="mix-blend-mode:multiply"/>
+        <rect x="3" y="30" width="34" height="7" rx="2" fill="#9ed4ee"/>
+        <g><rect x="7" y="6" width="5" height="24" rx="1" fill="#b9e2f5"/><rect x="5.5" y="21" width="8" height="4.5" rx="1.3" fill="#ef4f95"/><rect x="5.5" y="25.5" width="8" height="4.5" rx="1.3" fill="#ef4f95"/></g>
+        <g><rect x="17.5" y="6" width="5" height="24" rx="1" fill="#b9e2f5"/><rect x="16" y="16.5" width="8" height="4.5" rx="1.3" fill="#86d03b"/><rect x="16" y="21" width="8" height="4.5" rx="1.3" fill="#f8d12d"/><rect x="16" y="25.5" width="8" height="4.5" rx="1.3" fill="#86d03b"/></g>
+        <g><rect x="28" y="6" width="5" height="24" rx="1" fill="#b9e2f5"/><rect x="26.5" y="25.5" width="8" height="4.5" rx="1.3" fill="#3b8fe3"/></g>
       </svg>
       <span class="brand-text">
-        <strong>Color Fidget Stack</strong>
-        <small>Giocattolo antistress a dischi colorati · stampabile in 3D</small>
+        <strong>Ordina-colori</strong>
+        <small>Gioco di ordinamento stampabile in 3D · Bambu Lab P1S</small>
       </span>
     </a>
     <div class="top-actions">
-      <button id="btn-zip" class="btn primary" disabled>
-        <svg class="ico"><use href="#i-download"/></svg><span>Tutti gli STL</span>
-      </button>
+      <button id="btn-zip" class="btn primary" disabled><svg class="ico"><use href="#i-download"/></svg><span>Tutti gli STL</span></button>
       <a class="btn" href="https://github.com/Davide6414/Color_toy_fidget_stack" target="_blank" rel="noopener">GitHub</a>
     </div>
   </header>
@@ -59,16 +59,31 @@
       <div id="viewport" class="viewport"></div>
 
       <div class="toolbar" role="toolbar" aria-label="Vista">
-        <div class="seg" role="group" aria-label="Montato o esploso">
-          <button data-view="assembled" aria-pressed="true">Montato</button>
-          <button data-view="exploded" aria-pressed="false">Esploso</button>
+        <div class="seg" role="group" aria-label="Coperchio">
+          <button data-lid="0" aria-pressed="true">Chiusa</button>
+          <button data-lid="90" aria-pressed="false">Aperta</button>
         </div>
-        <button class="tool" id="btn-section" aria-pressed="false" title="Taglia il modello a metà (S)">Sezione</button>
-        <button class="tool" id="btn-top" title="Guarda i colori dall'alto">Dall'alto</button>
-        <button class="tool" id="btn-home" title="Vista iniziale">Reset</button>
-        <button class="tool icon" id="btn-sound" aria-pressed="true" title="Suono dei clic">
-          <svg class="ico"><use href="#i-sound"/></svg>
-        </button>
+        <div class="seg" role="group" aria-label="Inquadratura">
+          <button data-view="home">3D</button>
+          <button data-view="gioco">Gioco</button>
+          <button data-view="alto">Dall'alto</button>
+        </div>
+        <button class="tool" id="btn-section" aria-pressed="false" title="Taglia il modello lungo un binario">Sezione</button>
+        <button class="tool" id="btn-xray" aria-pressed="false" title="Coperchio trasparente">Raggi X</button>
+        <button class="tool" id="btn-print" aria-pressed="false" title="Mostra i piatti di stampa">Piatti di stampa</button>
+        <button class="tool icon" id="btn-sound" aria-pressed="true" title="Suoni"><svg class="ico"><use href="#i-sound"/></svg></button>
+      </div>
+
+      <div class="hud" id="hud" hidden>
+        <span id="hud-moves">0 mosse</span>
+        <span id="hud-rule">Regola ufficiale</span>
+        <span id="hud-hint" class="hud-hint">Tocca un'asta per prendere l'anello in cima</span>
+      </div>
+
+      <div class="win" id="win" hidden>
+        <strong>Risolto!</strong>
+        <span id="win-text"></span>
+        <button class="btn primary" id="btn-win-new"><svg class="ico"><use href="#i-shake"/></svg>Agita e rigioca</button>
       </div>
 
       <div class="caption" id="caption" hidden>
@@ -80,9 +95,6 @@
         <p id="caption-text"></p>
       </div>
 
-      <div class="legend" id="legend" aria-label="Legenda dei colori"></div>
-      <p class="hint" id="hint">Trascina un disco per ruotarlo · tasti <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> · <kbd>Spazio</kbd> = trottola</p>
-
       <div class="loading" id="loading">
         <div class="spinner" aria-hidden="true"></div>
         <p id="loading-text">Generazione dei modelli 3D…</p>
@@ -91,104 +103,91 @@
 
     <aside class="panel">
       <nav class="tabs" role="tablist">
-        <button role="tab" id="t-parts" aria-controls="tab-parts" aria-selected="true">Parti</button>
-        <button role="tab" id="t-anim" aria-controls="tab-anim" aria-selected="false">Animazioni</button>
+        <button role="tab" id="t-how" aria-controls="tab-how" aria-selected="true">Come funziona</button>
+        <button role="tab" id="t-play" aria-controls="tab-play" aria-selected="false">Gioca</button>
+        <button role="tab" id="t-parts" aria-controls="tab-parts" aria-selected="false">Pezzi</button>
         <button role="tab" id="t-params" aria-controls="tab-params" aria-selected="false">Parametri</button>
         <button role="tab" id="t-print" aria-controls="tab-print" aria-selected="false">Stampa</button>
       </nav>
 
-      <section class="tab" id="tab-parts" role="tabpanel" aria-labelledby="t-parts">
+      <section class="tab" id="tab-how" role="tabpanel" aria-labelledby="t-how">
         <p class="intro">
-          Una pila di <strong>tre dischi traslucidi</strong> — giallo, magenta e ciano — infilati su un mozzo
-          scanalato. Ogni disco <strong>scatta ogni 30°</strong> grazie a due bracci elastici; le finestre aperte
-          si sovrappongono e i filtri si sommano come in una stampa a colori. In cima, un
-          <strong>cappuccio a scatto</strong> tiene tutto insieme e gira come una trottola.
+          <strong>40 anelli in 4 colori su 6 aste</strong>: riordinali finché ogni asta ha un solo colore.
+          La scatola li mescola e li riallinea da sola, senza toccarli uno a uno.
         </p>
-        <p class="note">5 pezzi · nessun supporto · nessuna vite o colla · Ø 60 mm.</p>
-        <div id="part-list" class="cards"></div>
-      </section>
-
-      <section class="tab" id="tab-anim" role="tabpanel" aria-labelledby="t-anim" hidden>
-        <h2>Come funziona</h2>
-        <div class="anim-list" id="anim-list">
-          <button class="anim" data-anim="assembly"><svg class="ico"><use href="#i-play"/></svg><span><strong>Montaggio completo</strong><small>Base, tre dischi e aggancio del cappuccio, passo per passo.</small></span></button>
-          <button class="anim" data-anim="base"><svg class="ico"><use href="#i-play"/></svg><span><strong>Base e mozzo</strong><small>Scanalature, anello distanziale e foro con gradino conico.</small></span></button>
-          <button class="anim" data-anim="disc" data-arg="1"><svg class="ico"><use href="#i-play"/></svg><span><strong>Scatto dei dischi</strong><small>Il braccio elastico si flette e il dentino cade nella scanalatura.</small></span></button>
-          <button class="anim" data-anim="cap"><svg class="ico"><use href="#i-play"/></svg><span><strong>Aggancio del cappuccio</strong><small>Le 4 alette si chiudono nel foro e scattano sotto il gradino.</small></span></button>
-          <button class="anim" data-anim="mix"><svg class="ico"><use href="#i-play"/></svg><span><strong>Miscela dei colori</strong><small>Vista dall'alto: rotazioni casuali e colori sottrattivi.</small></span></button>
-          <button class="anim" data-anim="disassembly"><svg class="ico"><use href="#i-play"/></svg><span><strong>Smontaggio</strong><small>Una penna dal basso sgancia il cappuccio; poi i dischi si sfilano.</small></span></button>
-        </div>
-
-        <h2>Gioca</h2>
-        <div id="disc-controls" class="disc-controls"></div>
-        <div class="row">
-          <button class="btn" id="btn-spin">Fai girare il cappuccio</button>
-          <button class="btn" id="btn-shuffle">Mescola</button>
+        <button class="anim feature" data-anim="partita"><svg class="ico"><use href="#i-play"/></svg><span><strong>Guarda una partita dall'inizio</strong><small>Sfila, agita, reinfila, apri, gioca, chiudi.</small></span></button>
+        <ol class="steps">
+          <li><strong>Sfila le aste.</strong> A scatola chiusa si tirano fuori dalle tacche frontali: gli anelli restano dentro.</li>
+          <li><strong>Agita.</strong> Gli anelli, più lunghi che larghi, possono fermarsi solo distesi nei binari, con il foro in asse.</li>
+          <li><strong>Reinfila le aste.</strong> Ognuna attraversa gli anelli del suo binario e si innesta nella barra in fondo.</li>
+          <li><strong>Apri a 90°.</strong> La barra è solidale al coperchio: le aste si alzano e gli anelli scivolano sulla barra.</li>
+          <li><strong>Gioca.</strong> Un anello alla volta, dalla cima di un'asta all'altra. Massimo 10 per asta.</li>
+          <li><strong>Chiudi.</strong> Anche a partita in corso: le aste tornano nei binari con gli anelli infilati.</li>
+        </ol>
+        <h2>Come funziona ogni parte</h2>
+        <div class="anim-list">
+          <button class="anim" data-anim="binari"><svg class="ico"><use href="#i-play"/></svg><span><strong>Binari</strong><small>Perché un anello può fermarsi solo disteso.</small></span></button>
+          <button class="anim" data-anim="tacche"><svg class="ico"><use href="#i-play"/></svg><span><strong>Tacche frontali</strong><small>Fori di guida a scatola chiusa, aperte in alto per lasciare salire le aste.</small></span></button>
+          <button class="anim" data-anim="barra"><svg class="ico"><use href="#i-play"/></svg><span><strong>Barra e sedi</strong><small>L'innesto delle aste e l'appoggio degli anelli.</small></span></button>
+          <button class="anim" data-anim="cerniera"><svg class="ico"><use href="#i-play"/></svg><span><strong>Cerniera print in place</strong><small>Da 0° a 180°: esce dalla stampa già montata.</small></span></button>
+          <button class="anim" data-anim="magneti"><svg class="ico"><use href="#i-play"/></svg><span><strong>Fermo magnetico a 90°</strong><small>Quattro magneti, una sola pausa di stampa.</small></span></button>
+          <button class="anim" data-anim="chiusura"><svg class="ico"><use href="#i-play"/></svg><span><strong>Chiusura a scatto</strong><small>Due linguette elastiche tengono chiuso mentre agiti.</small></span></button>
+          <button class="anim" data-anim="stampa"><svg class="ico"><use href="#i-play"/></svg><span><strong>Piatti di stampa</strong><small>Scatola, anelli, aste e piatto di prova.</small></span></button>
         </div>
         <label class="slider">
           <span>Velocità animazioni <output id="speed-out">1×</output></span>
-          <input type="range" id="speed" min="0.5" max="2" step="0.25" value="1">
+          <input type="range" id="speed" min="0.5" max="2.5" step="0.25" value="1">
         </label>
-        <label class="slider">
-          <span>Amplificazione deformazioni <output id="exa-out">×3</output></span>
-          <input type="range" id="exaggerate" min="1" max="5" step="1" value="3">
-        </label>
-        <p class="note">Le flessioni reali sono di pochi decimi di millimetro: qui sono amplificate per renderle visibili. A ×1 vedi il movimento vero.</p>
+      </section>
+
+      <section class="tab" id="tab-play" role="tabpanel" aria-labelledby="t-play" hidden>
+        <div class="scoreboard">
+          <div><span class="big" id="sb-moves">0</span><small>mosse</small></div>
+          <div><span class="big" id="sb-mono">0/6</span><small>aste di un colore</small></div>
+          <div><span class="big" id="sb-state">—</span><small>stato</small></div>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="btn-new"><svg class="ico"><use href="#i-shake"/></svg>Agita: nuova partita</button>
+          <button class="btn" id="btn-quick">Mescola senza animazione</button>
+        </div>
+        <div class="row">
+          <button class="btn" id="btn-undo"><svg class="ico"><use href="#i-undo"/></svg>Annulla</button>
+          <button class="btn" id="btn-hint"><svg class="ico"><use href="#i-bulb"/></svg>Suggerisci</button>
+          <button class="btn" id="btn-solve">Risolvi</button>
+          <button class="btn" id="btn-lid">Apri il coperchio</button>
+        </div>
+        <p class="note" id="solver-note">Il risolutore controlla se la mescolata si può finire con la regola scelta.</p>
+        <h2>Regole</h2>
+        <div class="choice" role="radiogroup" aria-label="Regola">
+          <label><input type="radio" name="rule" value="ufficiale" checked><span><strong>Ufficiale</strong><small>Un anello va solo su un'asta vuota o sopra un anello dello stesso colore.</small></span></label>
+          <label><input type="radio" name="rule" value="libera"><span><strong>Libera</strong><small>Ovunque ci sia posto (al massimo 10 per asta).</small></span></label>
+        </div>
+        <div class="choice" role="radiogroup" aria-label="Obiettivo">
+          <label><input type="radio" name="goal" value="monocolore" checked><span><strong>Ogni asta di un colore</strong><small>Come nelle specifiche: basta che nessuna asta abbia colori misti.</small></span></label>
+          <label><input type="radio" name="goal" value="completo"><span><strong>Quattro aste piene</strong><small>Come il Color Stack: ogni colore tutto su un'asta, due aste vuote.</small></span></label>
+        </div>
+        <p class="note">Tocca un'asta per sollevare l'anello in cima, poi tocca l'asta di destinazione. Tocca di nuovo la stessa asta per rimetterlo giù.</p>
+      </section>
+
+      <section class="tab" id="tab-parts" role="tabpanel" aria-labelledby="t-parts" hidden>
+        <p class="note">Tre stampe e quattro magneti. Nessuna vite, nessuna colla: la scatola esce dalla stampante già montata.</p>
+        <div id="part-list" class="cards"></div>
       </section>
 
       <section class="tab" id="tab-params" role="tabpanel" aria-labelledby="t-params" hidden>
-        <h2>Parametri di stampa</h2>
-        <p class="note">Il modello è parametrico: cambia i giochi per adattarlo alla tua stampante. Il 3D e gli STL scaricati si aggiornano subito.</p>
+        <h2>Giochi e misure</h2>
+        <p class="note">Il modello è parametrico: le quote derivate si ricalcolano, il 3D e gli STL si aggiornano subito. Le verifiche di collisione girano nel progetto con <code>npm test</code>.</p>
         <div id="param-list" class="params"></div>
         <div class="row">
           <button class="btn" id="btn-reset-params">Ripristina valori</button>
           <button class="btn primary" id="btn-zip-params"><svg class="ico"><use href="#i-download"/></svg>STL con questi valori</button>
         </div>
-        <h2>Quote principali</h2>
+        <h2>Quote derivate</h2>
         <dl id="dims" class="dims"></dl>
       </section>
 
       <section class="tab prose" id="tab-print" role="tabpanel" aria-labelledby="t-print" hidden>
-        <h2>Cosa stampare</h2>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Pezzo</th><th>Filamento</th><th>Orientamento</th></tr></thead>
-            <tbody>
-              <tr><td>Base</td><td>Bianco opaco</td><td>Faccia piana sul piatto, mozzo in alto</td></tr>
-              <tr><td>Dischi ×3</td><td>Traslucido giallo, magenta, ciano</td><td>Faccia piana sul piatto, anello distanziale in alto</td></tr>
-              <tr><td>Cappuccio</td><td>PETG, colore a scelta</td><td>Capovolto: faccia superiore sul piatto, perno in alto</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p>Gli STL sono già nell'orientamento di stampa. Nessun pezzo richiede supporti.</p>
-
-        <h2>Impostazioni consigliate</h2>
-        <ul>
-          <li>Ugello 0,4 mm, strato 0,2 mm (0,12–0,16 mm per il cappuccio: il dente viene più preciso).</li>
-          <li>Dischi: 3 perimetri, riempimento 100% o "solo perimetri" per avere colori uniformi.</li>
-          <li>Base: 3 perimetri, riempimento 15–20%.</li>
-          <li>Cappuccio: 4 perimetri; le alette vengono comunque piene.</li>
-          <li>Attiva la compensazione del "piede d'elefante" (0,1–0,2 mm): il primo strato dei dischi non deve stringere il foro.</li>
-        </ul>
-
-        <h2>Colori</h2>
-        <p>Per la miscela servono filamenti <strong>traslucidi</strong> (PETG o PLA "transparent/translucent"): più il filtro è sottile, più i colori sono chiari. Lo spessore del filtro si cambia nei <em>Parametri</em>. La base bianca, meglio se lucida, riflette la luce attraverso i dischi.</p>
-
-        <h2>Montaggio</h2>
-        <ol>
-          <li>Rimuovi eventuali sbavature dal foro dei dischi e dal dentino dei bracci.</li>
-          <li>Infila il disco giallo sul mozzo con i dentini allineati a due scanalature, poi il magenta e il ciano.</li>
-          <li>Premi il cappuccio finché senti lo scatto.</li>
-        </ol>
-
-        <h2>Se qualcosa non va</h2>
-        <ul>
-          <li><strong>I dischi girano duri</strong>: aumenta il gioco disco ↔ mozzo o diminuisci la profondità del dentino.</li>
-          <li><strong>Il cappuccio non entra</strong>: diminuisci il sottosquadro dell'aggancio.</li>
-          <li><strong>Il cappuccio esce da solo</strong>: aumenta il sottosquadro o stampa il cappuccio in PETG.</li>
-          <li><strong>Colori troppo scuri</strong>: riduci lo spessore del filtro (es. 0,8 mm).</li>
-        </ul>
-        <p>Smontaggio: infila una penna nel foro sotto la base e spingi il perno verso l'alto.</p>
+        <div id="print-guide"></div>
       </section>
     </aside>
   </main>

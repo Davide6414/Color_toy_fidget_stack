@@ -1,43 +1,31 @@
-// Scena three.js: pezzi, materiali, sezione, esploso, trascinamento dei dischi
-// e cinematica dei meccanismi elastici applicata a ogni fotogramma.
+// Scena three.js del gioco ordina-colori: scatola con coperchio incernierato,
+// 6 aste, 40 anelli e magneti. Lo stato cinematico (apertura, aste sfilate,
+// posizione di ogni anello) viene applicato a ogni fotogramma.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
-import { makeDetent, fingerDeflection } from './mechanics.js';
+import { COLORS, BOX_COLOR, ROD_COLOR } from './params.js';
 import { tween, ease } from './anim.js';
 
 const DEG = Math.PI / 180;
-export const EXPLODE_STEP = 16; // mm tra un livello e l'altro nell'esploso
-const PEN_LENGTH = 70;
 
-const SECTION_COLORS = { base: '#e4572e', cap: '#8f99ab' };
-
-// Inquadrature in coordinate mondo (Y in alto, mm).
-const VIEWS = {
-  home: { pos: [58, 62, 84], target: [0, 8, 0] },
-  top: { pos: [0, 150, 1], target: [0, 10, 0] },
-  hub: { pos: [0, 86, 16], target: [0, 12, 0] },
-  section: { pos: [24, 34, 104], target: [0, 9, 0] },
-  sectionHigh: { pos: [26, 46, 136], target: [0, 18, 0] },
-  sectionLow: { pos: [18, -14, 120], target: [0, 2, 0] },
-  assembly: { pos: [100, 100, 140], target: [0, 26, 0] },
-  exploded: { pos: [122, 112, 172], target: [0, 41, 0] },
+// Inquadrature in coordinate mondo (Y in alto; il modello CAD ha Y verso la
+// cerniera, che nel mondo diventa -Z).
+export const VIEWS = {
+  home: { pos: [210, 182, 150], target: [0, 50, -66] },
+  chiusa: { pos: [104, 92, 102], target: [0, 4, -58] },
+  gioco: { pos: [0, 136, 206], target: [0, 70, -104] },
+  giocoAlto: { pos: [0, 230, 30], target: [0, 60, -104] },
+  alto: { pos: [0, 300, -30], target: [0, 0, -64] },
+  sezione: { pos: [190, 44, -50], target: [0, 10, -62] },
+  sezioneFronte: { pos: [66, 20, 30], target: [2, 6, -6] },
+  altoBinari: { pos: [0, 175, -18], target: [0, 0, -54] },
+  sezioneCerniera: { pos: [120, 30, -104], target: [0, 10, -114] },
+  barra: { pos: [150, 80, -40], target: [0, 26, -106] },
+  magneti: { pos: [118, 64, -188], target: [24, 14, -118] },
+  angolo: { pos: [58, 34, 44], target: [27, 16, -6] },
+  stampa: { pos: [0, 1020, 600], target: [0, 0, 16] },
 };
-
-export function createState() {
-  return {
-    explode: 0,
-    discAngle: [0, 30, 0],
-    discLift: [0, 0, 0],
-    capLift: 0,
-    capSpin: 0,
-    penZ: null,
-    visible: { base: true, 'disc-y': true, 'disc-m': true, 'disc-c': true, cap: true },
-    exaggerate: 3,
-    section: false,
-  };
-}
 
 function bufferGeometry({ positions, indices }) {
   const g = new THREE.BufferGeometry();
@@ -46,9 +34,8 @@ function bufferGeometry({ positions, indices }) {
   return g;
 }
 
-// Spigoli vivi per il contorno tecnico. A differenza di EdgesGeometry ignora i
-// triangoli "ago" (area quasi nulla) che le booleane lasciano sulle facce
-// piane: la loro normale è inaffidabile e produrrebbe linee spurie.
+// Spigoli vivi per il contorno, ignorando i triangoli "ago" lasciati dalle
+// booleane sulle facce piane (la loro normale è inaffidabile).
 function featureEdges({ positions: p, indices: ix }, thresholdDeg) {
   const nTri = ix.length / 3;
   const nVert = p.length / 3;
@@ -57,13 +44,16 @@ function featureEdges({ positions: p, indices: ix }, thresholdDeg) {
   const longest = new Float64Array(nTri);
   const key = (a, b) => (a < b ? a * nVert + b : b * nVert + a);
   for (let t = 0; t < nTri; t++) {
-    const [a, b, c] = [ix[3 * t] * 3, ix[3 * t + 1] * 3, ix[3 * t + 2] * 3];
+    const a = ix[3 * t] * 3;
+    const b = ix[3 * t + 1] * 3;
+    const c = ix[3 * t + 2] * 3;
     const ux = p[b] - p[a], uy = p[b + 1] - p[a + 1], uz = p[b + 2] - p[a + 2];
     const vx = p[c] - p[a], vy = p[c + 1] - p[a + 1], vz = p[c + 2] - p[a + 2];
     const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
     const len = Math.hypot(nx, ny, nz);
     const e = [[0, 1], [1, 2], [2, 0]].map(([i, j]) => {
-      const pi = ix[3 * t + i] * 3, pj = ix[3 * t + j] * 3;
+      const pi = ix[3 * t + i] * 3;
+      const pj = ix[3 * t + j] * 3;
       return (p[pi] - p[pj]) ** 2 + (p[pi + 1] - p[pj + 1]) ** 2 + (p[pi + 2] - p[pj + 2]) ** 2;
     });
     const m = Math.max(...e);
@@ -80,8 +70,6 @@ function featureEdges({ positions: p, indices: ix }, thresholdDeg) {
       if (faces) faces.push(t); else edges.set(k, [t]);
     }
   }
-  // Gli "aghi" ereditano la normale dai vicini attraverso i lati corti
-  // (il lato lungo può essere proprio uno spigolo vivo).
   for (let pass = 0; pass < 2; pass++) {
     let changed = true;
     while (changed) {
@@ -110,89 +98,110 @@ function featureEdges({ positions: p, indices: ix }, thresholdDeg) {
     const b = (k % nVert) * 3;
     out.push(p[a], p[a + 1], p[a + 2], p[b], p[b + 1], p[b + 2]);
   }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
-  return g;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
+  return geo;
 }
 
 function shadowTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
   const g = c.getContext('2d');
-  const grad = g.createRadialGradient(128, 128, 40, 128, 128, 128);
-  grad.addColorStop(0, 'rgba(40,32,20,0.32)');
-  grad.addColorStop(0.55, 'rgba(40,32,20,0.12)');
-  grad.addColorStop(1, 'rgba(40,32,20,0)');
+  const grad = g.createRadialGradient(128, 128, 30, 128, 128, 128);
+  grad.addColorStop(0, 'rgba(30,40,50,0.28)');
+  grad.addColorStop(0.6, 'rgba(30,40,50,0.1)');
+  grad.addColorStop(1, 'rgba(30,40,50,0)');
   g.fillStyle = grad;
   g.fillRect(0, 0, 256, 256);
   return new THREE.CanvasTexture(c);
 }
 
+export function createState(nRings = 40, perColor = nRings / 4) {
+  return {
+    theta: 0,                 // apertura coperchio, gradi
+    rodPull: Array(6).fill(0),// mm di asta sfilata in avanti
+    rodsVisible: true,
+    shake: [0, 0, 0, 0],      // traslazione x,y,z e rotazione della scatola durante l'agitata
+    xray: false,
+    section: null,            // { axis: 'x' | 'y', value } piano di sezione (CAD), oppure null
+    magnetGlow: 0,
+    rings: Array.from({ length: nRings }, (_, i) => ({
+      color: Math.floor(i / perColor),
+      frame: 'lid',           // 'lid' (sulle aste o nei binari) o 'free' (in volo)
+      x: 0, u: 0, roll: 0,    // posizione: x del binario/asta, u = distanza dalla barra
+      pos: new THREE.Vector3(), quat: new THREE.Quaternion(),
+      lift: 0,                // sollevamento visivo (anello in mano)
+      hidden: false,
+    })),
+  };
+}
+
 export class Viewer {
-  constructor(container, { onDetentClick, onSnap, onUserRotate } = {}) {
+  constructor(container, { onRodClick, onHover } = {}) {
     this.container = container;
+    this.onRodClick = onRodClick;
+    this.onHover = onHover;
     this.state = createState();
-    this.onDetentClick = onDetentClick;
-    this.onSnap = onSnap;
-    this.onUserRotate = onUserRotate;
-    this.parts = new Map();
-    this.prevGroove = [null, null, null];
-    this.prevFinger = 0;
+    this.mode = 'modello';
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.localClippingEnabled = true;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.domElement.className = 'gl';
     container.appendChild(renderer.domElement);
     this.renderer = renderer;
 
-    this.labelRenderer = new CSS2DRenderer();
-    this.labelRenderer.domElement.className = 'labels';
-    container.appendChild(this.labelRenderer.domElement);
-
     const scene = new THREE.Scene();
-    // Sfondo chiaro e opaco: i dischi usano la miscelazione moltiplicativa
-    // (come filtri colorati) e hanno bisogno di qualcosa da "filtrare".
-    scene.background = new THREE.Color('#e8e6e1');
+    scene.background = new THREE.Color('#eef3f6');
     this.scene = scene;
-
-    this.camera = new THREE.PerspectiveCamera(32, 1, 1, 4000);
+    this.camera = new THREE.PerspectiveCamera(30, 1, 2, 6000);
     this.controls = new OrbitControls(this.camera, renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
     this.controls.minDistance = 40;
-    this.controls.maxDistance = 600;
+    this.controls.maxDistance = 1400;
 
-    scene.add(new THREE.HemisphereLight('#ffffff', '#b8b2a6', 2.1));
-    const key = new THREE.DirectionalLight('#ffffff', 2.2);
-    key.position.set(50, 120, 70);
+    scene.add(new THREE.HemisphereLight('#ffffff', '#b6c2cc', 1.9));
+    const key = new THREE.DirectionalLight('#ffffff', 2.3);
+    key.position.set(80, 160, 120);
     scene.add(key);
-    const fill = new THREE.DirectionalLight('#ffffff', 0.7);
-    fill.position.set(-80, 40, -60);
+    const fill = new THREE.DirectionalLight('#ffffff', 0.8);
+    fill.position.set(-120, 60, -80);
     scene.add(fill);
 
-    // Il modello CAD ha Z in alto: lo ruotiamo per avere Y in alto in three.js.
+    // Radice in coordinate CAD (Z in alto) ruotata per avere Y in alto.
     this.root = new THREE.Group();
     this.root.rotation.x = -Math.PI / 2;
     scene.add(this.root);
 
     const shadow = new THREE.Mesh(
-      new THREE.CircleGeometry(52, 64),
+      new THREE.PlaneGeometry(200, 300),
       new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false }),
     );
-    shadow.position.z = -0.05;
-    shadow.renderOrder = -1;
+    shadow.position.set(0, 62, -0.05);
     this.root.add(shadow);
+    this.shadow = shadow;
 
-    this.clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 1e6);
+    this.boxGroup = new THREE.Group();
+    this.root.add(this.boxGroup);
+    this.lidPivot = new THREE.Group();
+    this.lidGroup = new THREE.Group();
+    this.lidPivot.add(this.lidGroup);
+    this.boxGroup.add(this.lidPivot);
+    this.printGroup = new THREE.Group();
+    this.printGroup.visible = false;
+    this.root.add(this.printGroup);
+
+    this.clipPlane = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 1e6);
     this.clipPlanes = [this.clipPlane];
 
-    this.pen = this.buildPen();
-    this.root.add(this.pen);
-
     this.raycaster = new THREE.Raycaster();
-    this.pickables = [];
-    this.drag = null;
+    this.pointer = new THREE.Vector2();
+    this.hitTargets = [];
+    this.hovered = -1;
+    this.selected = -1;
+    this.playEnabled = false;
     this.bindPointer();
 
     this.applyView(VIEWS.home);
@@ -201,188 +210,253 @@ export class Viewer {
     renderer.setAnimationLoop(() => this.frame());
   }
 
-  // ------------------------------------------------------------ modello
-  setModel(model) {
-    for (const p of this.parts.values()) {
-      this.root.remove(p.group);
-      p.group.traverse((o) => { o.geometry?.dispose(); });
-      for (const m of Object.values(p.mats)) m.dispose();
-      this.root.remove(p.label);
-      p.label.element.remove();
-    }
-    this.parts.clear();
-    this.pickables = [];
-    this.model = model;
-    this.dims = model.dims;
-    this.detent = makeDetent(model.dims);
-    for (const part of model.parts) this.addPart(part);
-    this.prevGroove = [null, null, null];
-  }
-
-  materialsFor(part) {
+  // ------------------------------------------------------------ materiali
+  material(color, { roughness = 0.5, metalness = 0, section = '#ef6a4c', xray = false } = {}) {
     const clippingPlanes = this.clipPlanes;
-    if (part.kind === 'disc') {
-      const common = {
-        color: part.color, transparent: true, depthWrite: false,
-        blending: THREE.MultiplyBlending, premultipliedAlpha: true, clippingPlanes,
-      };
-      return {
-        front: new THREE.MeshStandardMaterial({ ...common, roughness: 0.2, metalness: 0 }),
-        back: new THREE.MeshBasicMaterial({ ...common, side: THREE.BackSide }),
-        edges: new THREE.LineBasicMaterial({ color: '#1c1e24', transparent: true, opacity: 0.3, clippingPlanes }),
-      };
-    }
     return {
-      front: new THREE.MeshStandardMaterial({
-        color: part.color, roughness: part.kind === 'cap' ? 0.42 : 0.62, metalness: 0, clippingPlanes,
-      }),
-      back: new THREE.MeshBasicMaterial({ color: SECTION_COLORS[part.kind], side: THREE.BackSide, clippingPlanes }),
-      edges: new THREE.LineBasicMaterial({
-        color: part.kind === 'cap' ? '#000000' : '#5d5850', transparent: true,
-        opacity: part.kind === 'cap' ? 0.55 : 0.35, clippingPlanes,
-      }),
+      front: new THREE.MeshStandardMaterial({ color, roughness, metalness, clippingPlanes, transparent: xray, opacity: 1 }),
+      back: new THREE.MeshBasicMaterial({ color: section, side: THREE.BackSide, clippingPlanes }),
+      edges: new THREE.LineBasicMaterial({ color: '#253545', transparent: true, opacity: 0.28, clippingPlanes }),
     };
   }
 
-  makePieceObject(mesh, mats, part) {
+  makeObject(mesh, mats, { edges = true, crease = 32 } = {}) {
     const geo = bufferGeometry(mesh);
-    const shaded = toCreasedNormals(geo, 32 * DEG);
+    const shaded = toCreasedNormals(geo, crease * DEG);
     const group = new THREE.Group();
     const front = new THREE.Mesh(shaded, mats.front);
     const back = new THREE.Mesh(shaded, mats.back);
-    back.visible = false; // facce interne: servono solo a "riempire" la sezione
-    const edges = new THREE.LineSegments(featureEdges(mesh, 24), mats.edges);
+    back.visible = false;
+    group.add(back, front);
+    if (edges) group.add(new THREE.LineSegments(featureEdges(mesh, 26), mats.edges));
     geo.dispose();
-    group.add(back, front, edges);
-    return { group, front, back };
-  }
-
-  addPart(part) {
-    const mats = this.materialsFor(part);
-    const group = new THREE.Group();
-    group.name = part.id;
-    const entry = { part, group, arms: [], fingers: [], backs: [], mats };
-    for (const piece of part.pieces) {
-      const obj = this.makePieceObject(piece.mesh, mats, part);
-      entry.backs.push(obj.back);
-      if (piece.kind === 'body') {
-        group.add(obj.group);
-      } else {
-        // Ruotiamo i pezzi elastici attorno alla loro radice per mostrarne la flessione.
-        const pivot = new THREE.Group();
-        pivot.position.set(...piece.pivot);
-        obj.group.position.set(-piece.pivot[0], -piece.pivot[1], -piece.pivot[2]);
-        pivot.add(obj.group);
-        group.add(pivot);
-        if (piece.kind === 'arm') entry.arms.push({ pivot, lever: piece.lever });
-        if (piece.kind === 'finger') {
-          const axis = new THREE.Vector3(-Math.sin(piece.beta), Math.cos(piece.beta), 0);
-          entry.fingers.push({ pivot, axis, lever: piece.lever });
-        }
-      }
-      if (part.kind === 'disc') {
-        obj.front.userData.discIndex = part.index;
-        this.pickables.push(obj.front);
-      }
-    }
-    const el = document.createElement('div');
-    el.className = 'part-label';
-    el.innerHTML = `<span class="dot" style="background:${part.color}"></span>${part.name}`;
-    entry.label = new CSS2DObject(el);
-    this.root.add(entry.label);
-    this.root.add(group);
-    this.parts.set(part.id, entry);
-  }
-
-  buildPen() {
-    const group = new THREE.Group();
-    const body = new THREE.Mesh(
-      new THREE.CylinderGeometry(3.6, 3.6, PEN_LENGTH - 6, 32).rotateX(Math.PI / 2).translate(0, 0, -(PEN_LENGTH - 6) / 2 - 6),
-      new THREE.MeshStandardMaterial({ color: '#3567a8', roughness: 0.4, side: THREE.DoubleSide, clippingPlanes: this.clipPlanes }),
-    );
-    const tip = new THREE.Mesh(
-      new THREE.CylinderGeometry(2.9, 3.6, 6, 32).rotateX(Math.PI / 2).translate(0, 0, -3),
-      new THREE.MeshStandardMaterial({ color: '#d9dde3', roughness: 0.3, metalness: 0.4, side: THREE.DoubleSide, clippingPlanes: this.clipPlanes }),
-    );
-    group.add(body, tip);
-    group.visible = false;
+    group.userData.back = back;
+    group.userData.front = front;
     return group;
   }
 
-  // ------------------------------------------------------------ stato
-  discZ(i) {
-    const s = this.state;
-    return this.dims.discZ[i] + EXPLODE_STEP * s.explode * (i + 1) + s.discLift[i];
+  disposeGroup(g) {
+    g.traverse((o) => {
+      o.geometry?.dispose();
+      if (o.material) for (const m of [].concat(o.material)) m.dispose();
+    });
   }
 
-  capZ() {
-    const s = this.state;
-    return this.dims.hubTop + EXPLODE_STEP * s.explode * 4.2 + s.capLift;
+  // ------------------------------------------------------------ modello
+  setModel(model) {
+    const d = model.dims;
+    this.model = model;
+    this.dims = d;
+    for (const g of [this.boxGroup, this.lidGroup, this.printGroup]) {
+      for (const child of [...g.children]) {
+        if (child === this.lidPivot) continue;
+        g.remove(child);
+        this.disposeGroup(child);
+      }
+    }
+    const m = model.meshes;
+    this.mats = {
+      base: this.material(BOX_COLOR, { roughness: 0.55 }),
+      lid: this.material(BOX_COLOR, { roughness: 0.55, xray: true }),
+      rod: this.material(ROD_COLOR, { roughness: 0.42, section: '#5fa8d3' }),
+      magnet: this.material('#aeb4bd', { roughness: 0.28, metalness: 0.85, section: '#6b7380' }),
+      rings: COLORS.map((c) => this.material(c.hex, { roughness: 0.38, section: c.hex })),
+    };
+    this.mats.magnet.front.emissive = new THREE.Color('#ff7a1a');
+    this.mats.magnet.front.emissiveIntensity = 0;
+
+    this.baseObj = this.makeObject(m.base, this.mats.base);
+    this.boxGroup.add(this.baseObj);
+    this.lidObj = this.makeObject(m.lid, this.mats.lid);
+    this.lidGroup.add(this.lidObj);
+    this.lidPivot.position.set(0, d.yHinge, d.zHinge);
+    this.lidGroup.position.set(0, -d.yHinge, -d.zHinge);
+
+    // magneti: 2 nella base, 2 nel coperchio
+    this.magnets = [];
+    for (const side of [-1, 1]) {
+      const mb = this.makeObject(m.magnet, this.mats.magnet, { edges: false });
+      mb.position.set(side * d.magBaseX, d.magBase.y, d.magBase.z);
+      this.boxGroup.add(mb);
+      const ml = this.makeObject(m.magnet, this.mats.magnet, { edges: false });
+      ml.position.set(side * d.magLidX, d.magLid.y, d.magLid.z);
+      this.lidGroup.add(ml);
+      this.magnets.push(mb, ml);
+    }
+
+    // aste nel riferimento del coperchio
+    this.rods = d.chX.map((x, i) => {
+      const obj = this.makeObject(m.rod, this.mats.rod, { crease: 40 });
+      obj.userData.x = x;
+      this.lidGroup.add(obj);
+      return obj;
+    });
+    // bersagli invisibili per cliccare le aste a coperchio aperto
+    this.hitTargets = d.chX.map((x, i) => {
+      const len = d.rodLen - d.seatDepth + 14;
+      const mesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(6, 6, len, 16),
+        new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0, depthWrite: false }),
+      );
+      mesh.position.set(x, d.yBarFront - len / 2, d.zAxis);
+      mesh.userData.rod = i;
+      this.lidGroup.add(mesh);
+      return mesh;
+    });
+
+    // 40 anelli nel riferimento della scatola
+    this.ringObjs = this.state.rings.map((r) => {
+      const obj = this.makeObject(m.ring, this.mats.rings[r.color], { crease: 40 });
+      this.boxGroup.add(obj);
+      return obj;
+    });
+
+    this.buildPrintBeds(model);
+    this.applyState();
+  }
+
+  buildPrintBeds(model) {
+    const bed = 256;
+    const beds = [
+      { label: 'Scatola', parts: [{ id: 'scatola', color: BOX_COLOR }] },
+      { label: 'Anelli', parts: COLORS.map((c, k) => ({ id: 'anelli', color: c.hex, dx: 0, dy: k * 26 })) },
+      { label: 'Aste', parts: [{ id: 'aste', color: ROD_COLOR }] },
+      { label: 'Piatto di prova', parts: [{ id: 'prova', color: '#c9d6de' }] },
+    ];
+    const plateMat = new THREE.MeshStandardMaterial({ color: '#2b2f36', roughness: 0.8 });
+    const gridMat = new THREE.LineBasicMaterial({ color: '#4a525d' });
+    beds.forEach((b, i) => {
+      const g = new THREE.Group();
+      g.position.set(((i % 2) - 0.5) * (bed + 30), (0.5 - Math.floor(i / 2)) * (bed + 30), 0);
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(bed, bed, 2), plateMat);
+      plate.position.z = -1;
+      g.add(plate);
+      const pts = [];
+      for (let k = 0; k <= 8; k++) {
+        const v = -bed / 2 + (k * bed) / 8;
+        pts.push(v, -bed / 2, 0.05, v, bed / 2, 0.05, -bed / 2, v, 0.05, bed / 2, v, 0.05);
+      }
+      const grid = new THREE.BufferGeometry();
+      grid.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+      g.add(new THREE.LineSegments(grid, gridMat));
+      const placed = [];
+      for (const part of b.parts) {
+        const src = model.parts.find((p) => p.id === part.id);
+        const obj = this.makeObject(src.print, this.material(part.color, { roughness: 0.5 }));
+        obj.userData.dy = part.dy ?? 0;
+        placed.push(obj);
+        g.add(obj);
+      }
+      // centra il contenuto sul piatto
+      const box = new THREE.Box3();
+      placed.forEach((o) => { o.position.y = o.userData.dy; o.updateMatrixWorld(true); box.expandByObject(o); });
+      const c = box.getCenter(new THREE.Vector3());
+      placed.forEach((o) => { o.position.x -= c.x; o.position.y -= c.y; });
+      g.add(this.textSprite(b.label, [0, bed / 2 + 14, 1]));
+      this.printGroup.add(g);
+    });
+  }
+
+  // Etichetta di testo sempre rivolta alla camera.
+  textSprite(text, [x, y, z]) {
+    const c = document.createElement('canvas');
+    const ctx = c.getContext('2d');
+    const font = '600 64px system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+    ctx.font = font;
+    const w = Math.ceil(ctx.measureText(text).width) + 48;
+    c.width = w;
+    c.height = 96;
+    ctx.font = font;
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, w, 96, 48);
+    ctx.fill();
+    ctx.fillStyle = '#17202a';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 24, 50);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+    const h = 16;
+    sprite.scale.set((h * w) / 96, h, 1);
+    sprite.position.set(x, y, z);
+    sprite.renderOrder = 10;
+    return sprite;
+  }
+
+  // ------------------------------------------------------------ stato
+  // Trasforma una posa nel riferimento del coperchio in quello della scatola.
+  lidToBox(pos, quat, outPos, outQuat) {
+    const d = this.dims;
+    const a = -this.state.theta * DEG;
+    const dy = pos.y - d.yHinge;
+    const dz = pos.z - d.zHinge;
+    outPos.set(pos.x, d.yHinge + dy * Math.cos(a) - dz * Math.sin(a), d.zHinge + dy * Math.sin(a) + dz * Math.cos(a));
+    this._q ??= new THREE.Quaternion();
+    this._q.setFromAxisAngle(new THREE.Vector3(1, 0, 0), a);
+    outQuat.copy(this._q).multiply(quat);
+  }
+
+  // Posa di un anello sull'asta/binario: x del binario, u = distanza del suo
+  // bordo posteriore dalla faccia della barra.
+  ringLidPose(r, pos, quat) {
+    const d = this.dims;
+    pos.set(r.x, d.yBarFront - r.u - d.p.ringL / 2, d.zAxis);
+    quat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), r.roll);
   }
 
   applyState() {
-    const s = this.state;
     const d = this.dims;
     if (!d) return;
-    for (const [id, entry] of this.parts) {
-      const { part, group } = entry;
-      group.visible = s.visible[id] !== false;
-      let z = 0;
-      if (part.kind === 'disc') {
-        const i = part.index;
-        z = this.discZ(i);
-        const angle = s.discAngle[i];
-        group.rotation.z = angle * DEG;
-        const onHub = z < d.hubTop && z + d.discT > d.baseH;
-        const defl = onHub ? this.detent(angle) : 0;
-        for (const arm of entry.arms) arm.pivot.rotation.z = (defl / arm.lever) * s.exaggerate;
-        const groove = onHub ? Math.round(angle / d.step) : null;
-        if (groove !== null && this.prevGroove[i] !== null && groove !== this.prevGroove[i] && group.visible) {
-          this.onDetentClick?.(i);
-        }
-        this.prevGroove[i] = groove;
-      } else if (part.kind === 'cap') {
-        z = this.capZ();
-        group.rotation.z = s.capSpin * DEG;
-        const defl = fingerDeflection(d, z - d.hubTop);
-        for (const f of entry.fingers) f.pivot.quaternion.setFromAxisAngle(f.axis, (defl / f.lever) * s.exaggerate);
-        if (this.prevFinger > 0.02 && defl === 0 && group.visible) this.onSnap?.();
-        this.prevFinger = defl;
+    const s = this.state;
+    this.lidPivot.rotation.x = -s.theta * DEG;
+    const [sx, sy, sz, sr] = s.shake;
+    this.boxGroup.position.set(sx, sy, sz);
+    this.boxGroup.rotation.set(sr * 0.6, sr, sr * 0.3);
+    this.rods.forEach((obj, i) => {
+      obj.visible = s.rodsVisible;
+      obj.position.set(obj.userData.x, -d.p.rodTail - s.rodPull[i], d.zAxis);
+    });
+    const lp = new THREE.Vector3();
+    const lq = new THREE.Quaternion();
+    s.rings.forEach((r, i) => {
+      const obj = this.ringObjs[i];
+      obj.visible = !r.hidden;
+      if (r.frame === 'free') {
+        obj.position.copy(r.pos);
+        obj.quaternion.copy(r.quat);
+      } else {
+        this.ringLidPose(r, lp, lq);
+        this.lidToBox(lp, lq, obj.position, obj.quaternion);
       }
-      group.position.z = z;
-      for (const b of entry.backs) b.visible = s.section;
-      const r = part.kind === 'base' ? d.baseR : part.kind === 'cap' ? d.capR : d.discR;
-      entry.label.position.set(r + 4, 0, z + (part.kind === 'base' ? d.baseH / 2 : 1.5));
-      entry.label.visible = group.visible && s.explode > 0.35;
+    });
+    this.mats.lid.front.opacity = s.xray ? 0.2 : 1;
+    this.mats.lid.front.depthWrite = !s.xray;
+    this.mats.magnet.front.emissiveIntensity = s.magnetGlow;
+    for (const mg of this.magnets) mg.visible = s.xray || s.section !== null || s.magnetGlow > 0;
+    const sec = s.section;
+    const sectionOn = sec !== null;
+    if (sec?.axis === 'y') {
+      // CAD y → mondo -z: si tiene la parte con y ≥ valore
+      this.clipPlane.normal.set(0, 0, -1);
+      this.clipPlane.constant = -sec.value;
+    } else {
+      this.clipPlane.normal.set(-1, 0, 0);
+      this.clipPlane.constant = sectionOn ? sec.value : 1e6;
     }
-    this.pen.visible = s.penZ !== null;
-    if (s.penZ !== null) this.pen.position.z = s.penZ;
-  }
-
-  updateClip() {
-    if (!this.state.section) { this.clipPlane.constant = 1e6; return; }
-    // Piano di sezione verticale passante per l'asse, sempre rivolto alla camera.
-    const v = this.camera.position.clone().sub(this.controls.target);
-    v.y = 0;
-    if (v.lengthSq() < 1e-6) v.set(0, 0, 1);
-    v.normalize().negate();
-    this.clipPlane.normal.copy(v);
-    this.clipPlane.constant = 0;
+    this.root.traverse((o) => { if (o.userData.back) o.userData.back.visible = sectionOn; });
   }
 
   frame() {
     this.controls.update();
     this.applyState();
-    this.updateClip();
     this.renderer.render(this.scene, this.camera);
-    this.labelRenderer.render(this.scene, this.camera);
   }
 
   resize() {
     const w = this.container.clientWidth || 1;
     const h = this.container.clientHeight || 1;
     this.renderer.setSize(w, h, false);
-    this.labelRenderer.setSize(w, h);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
   }
@@ -392,9 +466,8 @@ export class Viewer {
     const v = typeof name === 'string' ? VIEWS[name] : name;
     const target = new THREE.Vector3(...v.target);
     const dir = new THREE.Vector3(...v.pos).sub(target);
-    // Su schermi stretti (telefono in verticale) allontaniamo la camera.
     const aspect = this.camera.aspect || 1;
-    if (aspect < 1.25) dir.multiplyScalar(1.25 / aspect);
+    if (aspect < 1.3) dir.multiplyScalar((1.3 / aspect) ** 0.6);
     return { pos: target.clone().add(dir), target };
   }
 
@@ -405,7 +478,6 @@ export class Viewer {
     this.controls.update();
   }
 
-  // Volo della camera; `token` permette di interrompere.
   flyTo(name, ms = 900, token = null) {
     const { pos, target } = this.viewFor(name);
     const p0 = this.camera.position.clone();
@@ -419,114 +491,57 @@ export class Viewer {
     });
   }
 
-  // Giro della camera attorno all'asse verticale.
-  orbit(deg, ms, token = null) {
-    const target = this.controls.target.clone();
-    const off = this.camera.position.clone().sub(target);
-    return tween({}, {}, ms, {
-      easing: ease.inOut, token,
-      onUpdate: (e) => {
-        const o = off.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), deg * DEG * e);
-        this.camera.position.copy(target).add(o);
-      },
-    });
+  setMode(mode) {
+    this.mode = mode;
+    const print = mode === 'stampa';
+    this.printGroup.visible = print;
+    this.boxGroup.visible = !print;
+    this.shadow.visible = !print;
   }
 
-  // ------------------------------------------------------------ input
-  pickDisc(event) {
-    const rect = this.renderer.domElement.getBoundingClientRect();
-    const ndc = new THREE.Vector2(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      -((event.clientY - rect.top) / rect.height) * 2 + 1,
-    );
-    this.raycaster.setFromCamera(ndc, this.camera);
-    const visible = this.pickables.filter((m) => {
-      let o = m;
-      while (o) { if (!o.visible) return false; o = o.parent; }
-      return true;
-    });
-    const hit = this.raycaster.intersectObjects(visible, false)[0];
-    return hit ? hit.object.userData.discIndex : -1;
+  // ------------------------------------------------------------ gioco
+  setPlayEnabled(on) {
+    this.playEnabled = on;
+    if (!on) this.setHover(-1);
+    this.container.classList.toggle('playing', on);
   }
 
-  // Angolo (gradi) del puntatore sul piano del disco i, in coordinate del modello.
-  pointerAngle(event, i) {
+  setHover(i) {
+    if (this.hovered === i) return;
+    this.hovered = i;
+    this.hitTargets.forEach((t, k) => { t.material.opacity = k === i ? 0.12 : k === this.selected ? 0.08 : 0; });
+    this.onHover?.(i);
+  }
+
+  setSelected(i) {
+    this.selected = i;
+    this.hitTargets.forEach((t, k) => { t.material.opacity = k === this.hovered ? 0.12 : k === i ? 0.08 : 0; });
+  }
+
+  pickRod(event) {
     const rect = this.renderer.domElement.getBoundingClientRect();
-    const ndc = new THREE.Vector2(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      -((event.clientY - rect.top) / rect.height) * 2 + 1,
-    );
-    this.raycaster.setFromCamera(ndc, this.camera);
-    const ray = this.raycaster.ray.clone().applyMatrix4(this.root.matrixWorld.clone().invert());
-    if (Math.abs(ray.direction.z) < 0.25) return null; // vista troppo radente
-    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -(this.discZ(i) + this.dims.discT / 2));
-    const p = ray.intersectPlane(plane, new THREE.Vector3());
-    return p ? Math.atan2(p.y, p.x) / DEG : null;
+    this.pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    const hit = this.raycaster.intersectObjects(this.hitTargets, false)[0];
+    return hit ? hit.object.userData.rod : -1;
   }
 
   bindPointer() {
     const el = this.renderer.domElement;
-    el.addEventListener('pointerdown', (e) => {
-      if (!this.dims || e.button !== 0) return;
-      const i = this.pickDisc(e);
-      if (i < 0) return;
-      this.onUserRotate?.(i);
-      this.controls.enabled = false;
-      el.setPointerCapture(e.pointerId);
-      const a = this.pointerAngle(e, i);
-      this.drag = { i, last: a, lastX: e.clientX, raw: this.state.discAngle[i], id: e.pointerId };
-      this.container.classList.add('dragging');
-    }, { capture: true }); // prima di OrbitControls, così la camera resta ferma
-    el.addEventListener('pointermove', (e) => {
-      if (!this.drag) {
-        if (this.dims && e.pointerType === 'mouse') this.container.classList.toggle('can-drag', this.pickDisc(e) >= 0);
-        return;
-      }
-      const g = this.drag;
-      const a = this.pointerAngle(e, g.i);
-      let delta;
-      if (a === null || g.last === null) {
-        delta = (e.clientX - g.lastX) * 0.6;
-      } else {
-        delta = ((a - g.last + 540) % 360) - 180;
-      }
-      g.last = a;
-      g.lastX = e.clientX;
-      g.raw += delta;
-      this.state.discAngle[g.i] = this.detentFeel(g.raw);
+    let down = null;
+    el.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });
+    el.addEventListener('pointerup', (e) => {
+      if (!down || !this.playEnabled) return;
+      const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+      down = null;
+      if (moved > 6) return; // era una rotazione della camera
+      const i = this.pickRod(e);
+      if (i >= 0) this.onRodClick?.(i);
     });
-    const end = () => {
-      if (!this.drag) return;
-      const { i } = this.drag;
-      this.drag = null;
-      this.controls.enabled = true;
-      this.container.classList.remove('dragging');
-      const step = this.dims.step;
-      const target = Math.round(this.state.discAngle[i] / step) * step;
-      tween(this.state.discAngle, { [i]: target }, 140, { easing: ease.out });
-    };
-    el.addEventListener('pointerup', end);
-    el.addEventListener('pointercancel', end);
-  }
-
-  // Sensazione di scatto durante il trascinamento: il disco "resta" nella
-  // scanalatura e poi salta alla successiva.
-  detentFeel(raw) {
-    const step = this.dims.step;
-    const f = raw / step;
-    const n = Math.round(f);
-    const r = f - n;
-    return (n + (Math.sign(r) * Math.abs(2 * r) ** 2.4) / 2) * step;
-  }
-
-  // Ruota un disco di `steps` scatti con una breve animazione.
-  rotateDisc(i, steps, ms = 200) {
-    const step = this.dims.step;
-    const from = Math.round(this.state.discAngle[i] / step) * step;
-    return tween(this.state.discAngle, { [i]: from + steps * step }, ms * Math.abs(steps), { easing: ease.inOut });
-  }
-
-  setSection(on) {
-    this.state.section = on;
+    el.addEventListener('pointermove', (e) => {
+      if (!this.playEnabled || e.pointerType !== 'mouse') return;
+      this.setHover(this.pickRod(e));
+    });
+    el.addEventListener('pointerleave', () => this.setHover(-1));
   }
 }

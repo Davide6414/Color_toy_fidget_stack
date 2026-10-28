@@ -1,11 +1,13 @@
 {
-  "name": "color-fidget-stack",
+  "name": "ordina-colori",
   "version": "1.0.0",
   "private": true,
-  "description": "Color Fidget Stack: giocattolo antistress a dischi colorati stampabile in 3D, con viewer web e STL parametrici",
+  "description": "Gioco ordina-colori stampabile in 3D (Bambu Lab P1S): modelli parametrici, STL, animazioni e partita giocabile nel browser",
   "type": "module",
   "scripts": {
-    "test": "node tools/check.mjs",
+    "test": "node tools/check.mjs && node tools/test-game.mjs",
+    "test:geo": "node tools/check.mjs",
+    "test:game": "node tools/test-game.mjs",
     "build:stl": "node tools/build-stl.mjs",
     "build": "node tools/build-stl.mjs && node tools/build-site.mjs",
     "serve": "python3 -m http.server 8080"
