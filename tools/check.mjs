@@ -2,7 +2,7 @@
 // Controlla solidi chiusi, quote delle specifiche, esclusione delle posizioni
 // sbagliate degli anelli, assieme senza compenetrazioni, rotazione del
 // coperchio 0→180° con aste e anelli, scatto delle linguette, fermo a scatto a
-// 90°, scatto delle aste e piatti di stampa.
+// 90°, scatto delle aste, sbalzi e piatti di stampa.
 import { loadManifold, buildSolids, buildPrintLayouts, buildMiniPlate, openLid, rodInChannel, ringInChannel } from '../js/geometry.js';
 import { DEFAULT_PARAMS, PARAM_SPECS, MINI } from '../js/params.js';
 
@@ -22,6 +22,27 @@ function shells(m) {
   const neg = parts.length - pos;
   for (const x of parts) x.delete();
   return { pos, neg };
+}
+
+// Area delle facce rivolte verso il piatto (normale z < -0.9) sopra il primo
+// strato; allowed(x, y, z) esclude i ponti e i sottosquadri previsti.
+function flatDownArea(m, allowed = () => false) {
+  const me = m.getMesh();
+  const np = me.numProp;
+  const vp = me.vertProperties;
+  const tv = me.triVerts;
+  let area = 0;
+  for (let t = 0; t < tv.length; t += 3) {
+    const P = [0, 1, 2].map((k) => [vp[tv[t + k] * np], vp[tv[t + k] * np + 1], vp[tv[t + k] * np + 2]]);
+    const u = P[1].map((v, i) => v - P[0][i]);
+    const w = P[2].map((v, i) => v - P[0][i]);
+    const n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+    const len = Math.hypot(...n);
+    if (len < 1e-12) continue;
+    const c = [0, 1, 2].map((i) => (P[0][i] + P[1][i] + P[2][i]) / 3);
+    if (n[2] / len < -0.9 && c[2] > 0.05 && !allowed(...c)) area += len / 2;
+  }
+  return area;
 }
 
 function run(label, params, { full }) {
@@ -57,7 +78,10 @@ function run(label, params, { full }) {
     ok(d.protrusion + D > d.headroom, `anello sopra un binario pieno escluso: ${d.protrusion + D} > ${f2(d.headroom)}`);
     ok(d.headroom > d.protrusion, `sopra un binario pieno resta spazio per passare (${f2(d.headroom - d.protrusion)} mm)`);
     ok(d.notchW < D, `nessun anello esce dalle tacche: ${f2(d.notchW)} < ${D}`);
-    ok(d.seatAC < d.hole, `in verticale l'anello più basso appoggia sulla barra: sede ${f2(d.seatAC)} < foro ${f2(d.hole)}`);
+    const rIn = d.hole / 2 + d.holeChamfer;
+    const rOut = D / 2 - d.ringChamfer;
+    ok(rIn > d.seatAC / 2 && rOut > d.seatAC / 2 + 0.5,
+      `in verticale l'anello più basso appoggia sulla barra: corona piana r ${f2(rIn)}–${f2(rOut)} fuori dalla sede (r ${f2(d.seatAC / 2)})`);
     ok(d.hole > d.rodAC, `l'anello scorre sull'asta: foro ${f2(d.hole)} > spigoli ${f2(d.rodAC)}`);
 
     // ----------------------------------------------------------- assieme chiuso
@@ -274,13 +298,25 @@ function run(label, params, { full }) {
     // ----------------------------------------------------------- stampa
     const lay = buildPrintLayouts(s);
     ok(vol(s.base, lay.lidPrint) < 1e-3, 'stampa a 180°: base e coperchio separati (print in place)');
-    for (const [name, m] of [['scatola', lay.box], ['anelli', lay.rings10], ['aste', lay.rods6], ['piatto di prova', lay.testPlate]]) {
+    for (const [name, m] of [['scatola', lay.box], ['anelli', lay.ringsPlate], ['aste', lay.rods6], ['piatto di prova', lay.testPlate]]) {
       const b = m.boundingBox();
       const sx = b.max[0] - b.min[0];
       const sy = b.max[1] - b.min[1];
       ok(near(b.min[2], 0, 1e-6) && sx <= BED - 10 && sy <= BED - 10, `${name}: appoggiato sul piatto, ${sx.toFixed(1)} × ${sy.toFixed(1)} mm`);
     }
     ok(near(lay.lidPrint.boundingBox().min[2], 0, 1e-6), 'coperchio in stampa: faccia esterna sul piatto');
+    // Sbalzi ammessi: il ponte da 3,2 mm sopra il gioco di ogni linguetta dello
+    // scatto (stampata a z = lidT), i sottosquadri da ~1,3 mm di dentino e tasca
+    // del fermo accanto alla cerniera, la gola dell'asta distesa (0,28 mm dal piatto).
+    const zRelief = 2 * d.zHinge - (d.zLid - d.detent.relief);
+    const tongueX = d.chX.map((x, i) => [x + d.detentSide[i] * (d.seatAF / 2 - d.detent.slot), x + d.detentSide[i] * (d.seatAF / 2 + d.detent.w + d.detent.slot)].sort((a, b) => a - b));
+    const neckZ = (params.rodAF - d.neck.af) / 2;
+    const boxAllowed = (x, y, z) => (near(z, zRelief, 0.02) && tongueX.some(([a, b]) => x > a - 0.01 && x < b + 0.01))
+      || (Math.abs(x) > d.lidHalf - d.cheekW - 0.01 && Math.abs(y - d.yHinge) < d.stop.r[1] + 1 && z < d.zHinge);
+    const flat = flatDownArea(lay.box, boxAllowed);
+    ok(flat < 1, `scatola in stampa: nessuno sbalzo orizzontale oltre i ponti delle linguette e il fermo (${flat.toFixed(2)} mm²)`);
+    const flatTest = flatDownArea(lay.testPlate, (x, y, z) => near(z, neckZ, 0.02) || near(z, zRelief, 0.02));
+    ok(flatTest < 1, `piatto di prova: nessuno sbalzo orizzontale oltre la gola dell'asta e i ponti delle linguette (${flatTest.toFixed(2)} mm²)`);
 
     // ----------------------------------------------------------- cerniera
     const gaps = d.knuckles.slice(1).map((k, i) => k.x0 - d.knuckles[i].x1);
@@ -304,6 +340,9 @@ for (const spec of PARAM_SPECS) {
 }
 run('Cursori al minimo', { ...lo, segments: 32 }, { full: false });
 run('Cursori al massimo', { ...hi, segments: 32 }, { full: false });
+run('Gioco anello minimo, sede massima', { ...DEFAULT_PARAMS, slideClearance: 0.2, seatClearance: 0.25, segments: 32 }, { full: false });
+run('Cerniera massima, capienza minima', { ...DEFAULT_PARAMS, hingeClearance: 0.5, capacity: 6, segments: 32 }, { full: false });
+run('Scatto aste massimo, coda lunga', { ...DEFAULT_PARAMS, rodDetent: 0.7, rodTail: 10, segments: 32 }, { full: false });
 const dm = run(`Stampa prova (${MINI.channels} binari × ${MINI.capacity} anelli)`, { ...DEFAULT_PARAMS, ...MINI }, { full: true });
 run('Stampa prova, cursori al minimo', { ...lo, ...MINI, segments: 32 }, { full: false });
 run('Stampa prova, cursori al massimo', { ...hi, ...MINI, segments: 32 }, { full: false });

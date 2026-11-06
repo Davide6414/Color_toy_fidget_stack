@@ -71,10 +71,15 @@ export function buildSolids(wasm, params) {
   const xTip = LH - st.depth;                      // punta del dentino, dentro il percorso della guancia
 
   // ============================================================ BASE
-  const sideCS = union2([
-    rect(0, d.yRear - 4, 0, d.H),
-    T(rect(4, d.yRear - 4, 4, d.H - 4).offset(4, 'Round', 2, 48)),
-  ]);
+  // Parete laterale: spigolo posteriore alto raccordato, quello basso smussato
+  // a 45° (un raccordo sul fondo sarebbe uno sbalzo in stampa).
+  const sidePts = [[0, 0], [d.yRear - 2.4, 0], [d.yRear, 2.4]];
+  for (let k = 0; k <= 12; k++) {
+    const a = (k / 12) * (Math.PI / 2);
+    sidePts.push([d.yRear - 4 + 4 * Math.cos(a), d.H - 4 + 4 * Math.sin(a)]);
+  }
+  sidePts.push([0, d.H]);
+  const sideCS = poly(sidePts);
   const camTri = (side) => {
     const c = d.camChamfer;
     const s = side;
@@ -146,7 +151,7 @@ export function buildSolids(wasm, params) {
   // posteriore-inferiore è smussato a 45° per stamparlo senza supporti.
   const baseKnuckleCS = union2([
     T(circ(d.kR, yH, zH).subtract(poly([
-      [yH - 0.15, zH - d.kR], [yH + d.kR - 0.15, zH], [yH + 12, zH], [yH + 12, zH - 12], [yH - 0.15, zH - 12],
+      [yH - 0.15, zH - d.kR], [yH + d.kR + 0.15, zH + 0.15], [yH + 12, zH + 0.15], [yH + 12, zH - 12], [yH - 0.15, zH - 12],
     ]))),
     rect(yH - d.kR, yH - 0.15, 0, zH),
   ]);
@@ -172,10 +177,12 @@ export function buildSolids(wasm, params) {
   const seatsCS = union2(d.chX.map((x) => hexCS(d.seatAC / 2, x, d.zAxis)));
   bar = T(bar.subtract(extY(seatsCS, d.yBarFront - 1, d.ySeatBottom)));
 
-  const lidKnuckleCS = union2([
+  // Nocca del coperchio: inviluppo del cilindro e della nervatura sotto la
+  // piastra, così in stampa non resta nessuno sbalzo orizzontale.
+  const lidKnuckleCS = T(CrossSection.hull([
     circ(d.kR, yH, zH),
-    rect(d.yBarBack - 0.1, yH + d.kR, zH, d.zLid + 0.5),
-  ]);
+    rect(d.yBarBack - 0.1, yH - 0.15, zH, d.zLid + 0.5),
+  ]));
   const lidParts = [plate, skirt, bar];
   const socketR = d.coneR + g * Math.SQRT2;
   const sockets = [];
@@ -234,8 +241,8 @@ export function buildSolids(wasm, params) {
   const nubRight = hull([...rectPts(LH - 0.01, -0.01), ...rectPts(LH + t.nub, t.nub)]);
   lidParts.push(nubRight, mirrorX(nubRight));
 
-  // Incavo per il pollice sul bordo frontale.
-  const thumb = coneX(-10, 10, -1.5, d.H + 1.5, 4, 4);
+  // Incavo per il pollice sul bordo frontale, a 45° per la stampa capovolta.
+  const thumb = extX(poly([[-0.5, d.H + 0.5], [-0.5, d.H - 2.5], [2.5, d.H + 0.5]]), -10, 10);
 
   // Archi nella gonna sopra ogni tacca, smussati sulle due facce: a 90° la gonna
   // sta in cima alle aste e gli anelli devono passarci sotto per uscire.
@@ -395,16 +402,16 @@ export function buildPrintLayouts(s) {
   const lidPrint = openLid(s, s.lid, 180);
   const box = T(Manifold.compose([s.base, lidPrint]));
 
-  // Anelli: in piedi, 10 per piatto (uno per colore senza AMS).
+  // Anelli: in piedi, un piatto per colore (tanti anelli quanti ne tiene un'asta).
   const gap = p.ringD + 4;
-  const rings10 = T(Manifold.compose(Array.from({ length: 10 }, (_, k) =>
+  const ringsPlate = T(Manifold.compose(Array.from({ length: p.capacity }, (_, k) =>
     T(s.ringZ.translate([(k % 5) * gap, Math.floor(k / 5) * gap, 0])))));
 
   // Aste: distese su una faccia dell'esagono.
   const rodFlat = T(T(s.rodZ.rotate([0, 90, 0])).translate([0, 0, p.rodAF / 2]));
   const rods6 = T(Manifold.compose(Array.from({ length: 6 }, (_, k) => T(rodFlat.translate([0, k * 8, 0])))));
 
-  return { box, lidPrint, rings10, ring: s.ringZ, rod: rodFlat, rods6, testPlate: buildTestPlate(s) };
+  return { box, lidPrint, ringsPlate, ring: s.ringZ, rod: rodFlat, rods6, testPlate: buildTestPlate(s) };
 }
 
 // Piatto di prova: 3 anelli, spezzone d'asta, tratto di barra con 2 sedi,
@@ -503,10 +510,10 @@ export function buildModel(wasm, params) {
       { id: 'scatola', name: 'Scatola print in place', color: BOX_COLOR, file: 'scatola.stl', qty: 1,
         print: meshData(layouts.box), stats: stats(layouts.box),
         note: 'Base, coperchio, barra e cerniera in un unico pezzo, aperto a 180°.' },
-      { id: 'anelli', name: 'Anelli (piatto da 10)', color: COLORS[0].hex, file: 'anelli_x10.stl', qty: 4,
-        print: meshData(layouts.rings10), stats: stats(layouts.rings10),
-        note: 'Un piatto per colore: 4 piatti da 10 (o tutti insieme con l\'AMS).' },
-      { id: 'anello', name: 'Anello singolo', color: COLORS[2].hex, file: 'anello.stl', qty: 40,
+      { id: 'anelli', name: `Anelli (piatto da ${params.capacity})`, color: COLORS[0].hex, file: `anelli_x${params.capacity}.stl`, qty: 4,
+        print: meshData(layouts.ringsPlate), stats: stats(layouts.ringsPlate),
+        note: `Un piatto per colore: 4 piatti da ${params.capacity} (o tutti i ${4 * params.capacity} insieme con l'AMS).` },
+      { id: 'anello', name: 'Anello singolo', color: COLORS[2].hex, file: 'anello.stl', qty: 4 * params.capacity,
         print: meshData(layouts.ring), stats: stats(layouts.ring), note: 'In piedi, foro verticale.' },
       { id: 'aste', name: 'Aste (piatto da 6)', color: ROD_COLOR, file: 'aste_x6.stl', qty: 1,
         print: meshData(layouts.rods6), stats: stats(layouts.rods6), note: 'Distese su una faccia dell\'esagono.' },

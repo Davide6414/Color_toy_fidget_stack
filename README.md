@@ -58,7 +58,8 @@ Ingombro: scatola chiusa 68,4 × 129 × 20 mm (più 5 mm di code delle aste), ap
 
 - **Cerniera print in place con l'asse a metà altezza.** Base e coperchio si stampano entrambi appoggiati sul
   piatto solo se l'asse sta a metà dei 20 mm di altezza. Nocche alternate base/coperchio di raggio 3,5 con
-  perni conici a 45° e 0,3 mm di gioco.
+  perni conici a 45° e 0,3 mm di gioco. Le nocche del coperchio sono l'inviluppo del cilindro e della nervatura,
+  e lo spigolo basso posteriore delle pareti è smussato a 45°: in stampa non restano sbalzi orizzontali.
 - **Barra solidale al coperchio.** Ruota sempre davanti all'asse; i binari finiscono 2 mm prima della barra
   per lasciar passare il suo spigolo inferiore.
 - **Sedi profonde 12 mm.** L'asta si infila e basta: a tenerla dritta è solo la sede. Tolti i 3 mm della punta
@@ -130,7 +131,10 @@ STL della cartella `stl/` e per le verifiche.
 - a 90°, anelli che escono dalla coda di ogni asta senza toccare la gonna, spostati quanto permette il foro;
 - scatto delle aste: flessione del dentino in sede, sulla gola, sulla faccia e ad asta libera; forze,
   deformazioni, giochi di stampa di linguette e pilastrini, vani aperti sotto la barra;
-- piatti di stampa entro i 256 mm;
+- piatti di stampa entro i 256 mm e senza sbalzi orizzontali, a parte i ponti da 3,2 mm sopra le linguette dello
+  scatto e i sottosquadri da 1,3 mm del fermo;
+- combinazioni miste dei cursori (gioco anello minimo con sede massima, cerniera massima con capienza minima,
+  scatto massimo con coda lunga);
 - regole e risolutore della partita.
 
 ## Struttura

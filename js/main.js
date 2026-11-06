@@ -209,8 +209,8 @@ function renderParts() {
       anim: 'cerniera', files: ['scatola'],
     },
     {
-      title: 'Anelli', qty: '×40', swatchClass: 'rings',
-      meta: `Ø ${num(d.p.ringD, 0)} × ${num(d.p.ringL, 0)} mm, foro Ø ${num(d.hole, 2)} · 4 colori × 10`,
+      title: 'Anelli', qty: `×${4 * d.p.capacity}`, swatchClass: 'rings',
+      meta: `Ø ${num(d.p.ringD, 0)} × ${num(d.p.ringL, 0)} mm, foro Ø ${num(d.hole, 2)} · 4 colori × ${d.p.capacity}`,
       text: 'Più lunghi che larghi: è questo che li costringe a distendersi nei binari col foro in asse. Smusso esterno sui due bordi, invito sul foro.',
       stats: [`≈ ${num(g(P('anello')), 2)} g l'uno`, 'in piedi, foro verticale'],
       anim: 'binari', files: ['anelli', 'anello'],
@@ -377,7 +377,7 @@ function renderPrintGuide() {
       <thead><tr><th>Piatto</th><th>Orientamento</th><th>Note</th></tr></thead>
       <tbody>
         <tr><td>Scatola</td><td>Aperta a 180°: base col fondo giù, coperchio con la faccia esterna giù (${num(d.width, 0)} × ${num(d.openLength, 0)} mm)</td><td>Nessuna pausa</td></tr>
-        <tr><td>Anelli</td><td>In piedi, foro verticale, 10 per piatto</td><td>Un piatto per colore, oppure i 40 insieme con l'AMS</td></tr>
+        <tr><td>Anelli</td><td>In piedi, foro verticale, ${d.p.capacity} per piatto</td><td>Un piatto per colore, oppure i ${4 * d.p.capacity} insieme con l'AMS</td></tr>
         <tr><td>Aste</td><td>Distese su una faccia dell'esagono</td><td>Strati lungo tutta la lunghezza</td></tr>
         <tr><td>Piatto di prova</td><td>Come la scatola</td><td>Prima della scatola, per tarare i giochi e lo scatto delle aste</td></tr>
         <tr><td>Stampa prova</td><td>Un piatto: scatola mini aperta a 180°, asta distesa, anello in piedi (${num(miniX, 0)} × ${num(miniY, 0)} mm)</td><td>Dopo il piatto di prova, per provare cerniera, chiusura e fermo a 90°</td></tr>
