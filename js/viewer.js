@@ -1,5 +1,5 @@
 // Scena three.js del gioco ordina-colori: scatola con coperchio incernierato,
-// 6 aste, 40 anelli e magneti. Lo stato cinematico (apertura, aste sfilate,
+// 6 aste e 40 anelli. Lo stato cinematico (apertura, aste sfilate,
 // posizione di ogni anello) viene applicato a ogni fotogramma.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -22,7 +22,7 @@ export const VIEWS = {
   altoBinari: { pos: [0, 175, -18], target: [0, 0, -54] },
   sezioneCerniera: { pos: [120, 30, -104], target: [0, 10, -114] },
   barra: { pos: [150, 80, -40], target: [0, 26, -106] },
-  magneti: { pos: [118, 64, -188], target: [24, 14, -118] },
+  fermo: { pos: [92, 22, -121], target: [29, 8, -121] },
   angolo: { pos: [58, 34, 44], target: [27, 16, -6] },
   stampa: { pos: [0, 1020, 600], target: [0, 0, 16] },
 };
@@ -124,7 +124,6 @@ export function createState(nRings = 40, perColor = nRings / 4) {
     shake: [0, 0, 0, 0],      // traslazione x,y,z e rotazione della scatola durante l'agitata
     xray: false,
     section: null,            // { axis: 'x' | 'y', value } piano di sezione (CAD), oppure null
-    magnetGlow: 0,
     rings: Array.from({ length: nRings }, (_, i) => ({
       color: Math.floor(i / perColor),
       frame: 'lid',           // 'lid' (sulle aste o nei binari) o 'free' (in volo)
@@ -259,11 +258,8 @@ export class Viewer {
       base: this.material(BOX_COLOR, { roughness: 0.55 }),
       lid: this.material(BOX_COLOR, { roughness: 0.55, xray: true }),
       rod: this.material(ROD_COLOR, { roughness: 0.42, section: '#5fa8d3' }),
-      magnet: this.material('#aeb4bd', { roughness: 0.28, metalness: 0.85, section: '#6b7380' }),
       rings: COLORS.map((c) => this.material(c.hex, { roughness: 0.38, section: c.hex })),
     };
-    this.mats.magnet.front.emissive = new THREE.Color('#ff7a1a');
-    this.mats.magnet.front.emissiveIntensity = 0;
 
     this.baseObj = this.makeObject(m.base, this.mats.base);
     this.boxGroup.add(this.baseObj);
@@ -271,18 +267,6 @@ export class Viewer {
     this.lidGroup.add(this.lidObj);
     this.lidPivot.position.set(0, d.yHinge, d.zHinge);
     this.lidGroup.position.set(0, -d.yHinge, -d.zHinge);
-
-    // magneti: 2 nella base, 2 nel coperchio
-    this.magnets = [];
-    for (const side of [-1, 1]) {
-      const mb = this.makeObject(m.magnet, this.mats.magnet, { edges: false });
-      mb.position.set(side * d.magBaseX, d.magBase.y, d.magBase.z);
-      this.boxGroup.add(mb);
-      const ml = this.makeObject(m.magnet, this.mats.magnet, { edges: false });
-      ml.position.set(side * d.magLidX, d.magLid.y, d.magLid.z);
-      this.lidGroup.add(ml);
-      this.magnets.push(mb, ml);
-    }
 
     // aste nel riferimento del coperchio
     this.rods = d.chX.map((x, i) => {
@@ -437,8 +421,6 @@ export class Viewer {
     });
     this.mats.lid.front.opacity = s.xray ? 0.2 : 1;
     this.mats.lid.front.depthWrite = !s.xray;
-    this.mats.magnet.front.emissiveIntensity = s.magnetGlow;
-    for (const mg of this.magnets) mg.visible = s.xray || s.section !== null || s.magnetGlow > 0;
     const sec = s.section;
     const sectionOn = sec !== null;
     if (sec?.axis === 'y') {

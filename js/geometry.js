@@ -2,7 +2,7 @@
 // booleane CSG esatte con mesh sempre chiuse (manifold), quindi STL pronti per
 // Bambu Studio. Gira nel browser (import map) e in Node (node_modules).
 import Module from 'manifold-3d';
-import { computeDims, MAGNET, MINI, COLORS, BOX_COLOR, ROD_COLOR } from './params.js';
+import { computeDims, MINI, COLORS, BOX_COLOR, ROD_COLOR } from './params.js';
 
 let wasmPromise = null;
 export function loadManifold() {
@@ -44,6 +44,9 @@ export function buildSolids(wasm, params) {
     const c = T(T(Manifold.cylinder(h, r0, r1, 48)).transform(MX(0)));
     return x1 >= x0 ? T(c.translate([x0, y, z])) : T(T(c.rotate([0, 0, 180])).translate([x0, y, z]));
   };
+  // tronco di cono lungo +Y (y1 > y0)
+  const coneY = (y0, y1, x, z, r0, r1) =>
+    T(T(T(Manifold.cylinder(y1 - y0, r0, r1, seg)).rotate([-90, 0, 0])).translate([x, y0, z]));
   const hull = (pts) => T(Manifold.hull(pts));
   const union = (list) => T(Manifold.union(list));
   const mirrorX = (m) => T(m.mirror([1, 0, 0]));
@@ -58,14 +61,14 @@ export function buildSolids(wasm, params) {
   const yH = d.yHinge;
   const zH = d.zHinge;
   const g = p.hingeClearance;
-  const skin = MAGNET.skin;
 
-  // Sede del magnete: disco con asse X, sezione a "D" aperta in alto rispetto
-  // alla stampa (si infila dall'alto durante la pausa e viene ricoperta).
-  const magnetSlotCS = (y, z, openUp) => union2([
-    circ(d.slotR, y, z, 48),
-    openUp ? rect(y - d.slotR, y + d.slotR, z, z + d.slotR) : rect(y - d.slotR, y + d.slotR, z - d.slotR, z),
-  ]);
+  // Fermo a 90° (vedi params.js). Punti in coordinate polari attorno all'asse
+  // della cerniera, nel piano YZ: angolo 0 = dietro l'asse, -90 = sotto.
+  const st = d.stop;
+  const deg = 180 / Math.PI;
+  const pol = (r, a) => [yH + r * Math.cos(a / deg), zH + r * Math.sin(a / deg)];
+  const pol3 = (r, a, x) => [x, ...pol(r, a)];
+  const xTip = LH - st.depth;                      // punta del dentino, dentro il percorso della guancia
 
   // ============================================================ BASE
   const sideCS = union2([
@@ -92,16 +95,28 @@ export function buildSolids(wasm, params) {
     ...rectPts(LH + t.nub + nubClr, t.nub + nubClr - nubClr * Math.SQRT2),
   ]);
 
+  // Linguetta del fermo: la pelle interna della parete, libera dietro, in fondo
+  // e sotto (staccata dal fondo); in punta il dentino sotto l'asse della cerniera,
+  // con la faccia di battuta sul piano verticale dell'asse.
+  const beamEnd = yH + 0.3;
+  const stopSlots = union([
+    box(IH + st.beamT, IH + st.beamT + st.beamGap, yH - st.beamL, beamEnd + st.endSlot, -1, d.H + 1),
+    box(IH - 0.01, IH + st.beamT + 0.01, beamEnd, beamEnd + st.endSlot, -1, d.H + 1),
+  ]);
+  const stopNub = extX(poly([pol(st.r[0], -90 - st.ang), pol(st.r[1], -90 - st.ang), pol(st.r[1], -90), pol(st.r[0], -90)]), xTip, IH + 0.5);
+  const stopBeam = box(IH, IH + st.beamT, yH - st.beamL + 1, beamEnd, 0, d.H);
+
   let sideRight = extX(sideCS, IH, OH);
   sideRight = T(sideRight.subtract(extY(camTri(1), -1, d.yRear + 1)));
   sideRight = T(sideRight.subtract(dimpleRight));
-  sideRight = T(sideRight.subtract(extX(magnetSlotCS(d.magBase.y, d.magBase.z, true),
-    d.magBaseX - d.slotW / 2, d.magBaseX + d.slotW / 2)));
+  sideRight = T(T(sideRight.subtract(stopSlots)).add(stopNub));
   const sideLeft = mirrorX(sideRight);
 
+  const floorFree = box(IH - st.floorGap, IH + st.beamT + 0.01, yH - st.beamL + 0.5, beamEnd + st.endSlot, -1, d.floor + 1);
   const floor = T(box(-IH - 0.5, IH + 0.5, 0, yH - 0.15, 0, d.floor).subtract(union([
     box(LH - d.cheekW - g, IH + 0.01, yH - d.cheekY - g, yH + 1, -1, d.floor + 1),
     box(-IH - 0.01, -LH + d.cheekW + g, yH - d.cheekY - g, yH + 1, -1, d.floor + 1),
+    floorFree, mirrorX(floorFree),
   ])));
 
   let channels = union([
@@ -113,10 +128,18 @@ export function buildSolids(wasm, params) {
     rect(x - d.chR, x + d.chR, d.floor + d.chR, d.ribTop + 1),
   ]));
   channels = T(channels.subtract(extY(grooveCS, d.frontT, d.yChEnd + 1)));
-  const notchCS = union2(d.chX.flatMap((x) => [
-    circ(d.notchW / 2, x, d.zAxis, 48),
-    rect(x - d.notchW / 2, x + d.notchW / 2, d.zAxis, d.frontTop + 1),
-  ]));
+  // tacca: fondo concentrico all'asse e invito a 45° in cima, che raccoglie la
+  // coda dell'asta quando il coperchio si chiude
+  const notchAt = (x) => {
+    const w = d.notchW / 2;
+    const nl = d.notchLead;
+    return [
+      circ(w, x, d.zAxis, 48),
+      rect(x - w, x + w, d.zAxis, d.frontTop + 1),
+      poly([[x - w, d.frontTop - nl], [x + w, d.frontTop - nl], [x + w + nl + 1, d.frontTop + 1], [x - w - nl - 1, d.frontTop + 1]]),
+    ];
+  };
+  const notchCS = union2(d.chX.flatMap(notchAt));
   channels = T(channels.subtract(extY(notchCS, -1, d.frontT + 0.01)));
 
   // Nocche della base: cilindro + nervatura fino al fondo; il quarto
@@ -165,7 +188,8 @@ export function buildSolids(wasm, params) {
     if (right?.kind === 'B') sockets.push(coneX(right.x0 + 0.5, right.x0 - socketR, yH, zH, socketR + 0.5, 0));
   });
 
-  // Guance posteriori con i magneti del coperchio (dietro-sopra l'asse).
+  // Guance posteriori del coperchio (dietro-sopra l'asse): a 90° la loro faccia
+  // inferiore batte sul dentino del fermo.
   const topDz = d.H - zH;
   const cut = d.cheekCut;
   const cheekPts = [[yH - 0.5, zH], [yH + d.cheekY, zH]];
@@ -175,9 +199,32 @@ export function buildSolids(wasm, params) {
     cheekPts.push([yH + d.cheekY, d.H]);
   }
   cheekPts.push([yH - 0.5, d.H]);
-  const cheekRight = T(extX(poly(cheekPts), LH - d.cheekW, LH).subtract(extX(
-    magnetSlotCS(d.magLid.y, d.magLid.z, false), d.magLidX - d.slotW / 2, d.magLidX + d.slotW / 2)));
-  lidParts.push(cheekRight, mirrorX(cheekRight));
+  const cheekRight = extX(poly(cheekPts), LH - d.cheekW, LH);
+  // Sotto la guancia, rientrato rispetto alla punta del dentino, il supporto del
+  // rilievo che scatta a 90°; il rilievo ha fianchi a 45° nel verso di rotazione.
+  const xTab = xTip - st.tabClr;
+  const xBump = xTip + st.bump;
+  const stopTab = extX(poly([pol(3.2, 0), pol(st.r[1] + 0.6, 0), pol(st.r[1] + 0.6, -45), pol(3.2, -45)]), LH - d.cheekW, xTab);
+  const a1 = -(st.ang + st.bumpClr);              // inizio del rilievo all'altezza della punta del dentino
+  const a2 = a1 - st.bumpW;
+  const bumpPts = [st.r[0] - 0.3, st.r[1] + 0.3].flatMap((r) => [
+    pol3(r, a1 + (st.tabClr / r) * deg, xTab - 0.01), pol3(r, a1 - (st.bump / r) * deg, xBump),
+    pol3(r, a2 + (st.bump / r) * deg, xBump), pol3(r, a2 - ((st.bump + st.tabClr) / r) * deg, xTab - 0.01),
+  ]);
+  const stopBump = hull(bumpPts);
+  lidParts.push(cheekRight, mirrorX(cheekRight), stopTab, mirrorX(stopTab), stopBump, mirrorX(stopBump));
+  // Tasca dove sta il dentino nella stampa a 180°, con lo scivolo che alla prima
+  // chiusura spinge di lato la linguetta.
+  const pa = (st.pocketClr / st.r[0]) * deg;
+  const lo = 90 - st.ang - pa;
+  const hi = 90 + pa;
+  const xIn = xTip - st.pocketClr;
+  // fuori 0,2 in più: la tasca è un poliedro e sulle corde perde gioco
+  const pocketPts = [st.r[0] - st.pocketClr, st.r[1] + st.pocketClr + 0.2].flatMap((r) => [
+    pol3(r, hi, xIn), pol3(r, hi, LH + 0.5), pol3(r, lo, xIn), pol3(r, lo, LH + 0.5),
+    pol3(r, lo - ((LH - xIn) / r) * deg, LH + 0.01), pol3(r, lo - ((LH - xIn) / r) * deg, LH + 0.5),
+  ]);
+  const stopPocket = hull(pocketPts);
 
   // Linguette elastiche della chiusura frontale (nel piano del coperchio).
   const tongueSlots = union([
@@ -190,8 +237,63 @@ export function buildSolids(wasm, params) {
   // Incavo per il pollice sul bordo frontale.
   const thumb = coneX(-10, 10, -1.5, d.H + 1.5, 4, 4);
 
+  // Archi nella gonna sopra ogni tacca, smussati sulle due facce: a 90° la gonna
+  // sta in cima alle aste e gli anelli devono passarci sotto per uscire.
+  const ac = d.archChamfer;
+  const arches = d.chX.flatMap((x) => [
+    coneY(-1, d.frontT + 1, x, d.zAxis, d.archR, d.archR),
+    coneY(-0.01, ac, x, d.zAxis, d.archR + ac + 0.01, d.archR),
+    coneY(d.frontT - ac, d.frontT + 0.01, x, d.zAxis, d.archR, d.archR + ac + 0.01),
+  ]);
+
+  // Scatto delle aste nella sede (vedi params.js): linguetta nel piano del
+  // coperchio, pilastrino nel vano della barra, dentino sulla faccia dell'asta.
+  const dt = d.detent;
+  const detentCuts = [];
+  const detentParts = [];
+  const detentMoving = [];
+  d.chX.forEach((xc, i) => {
+    const sg = d.detentSide[i];
+    const xIn = xc + sg * (d.seatAF / 2);           // piano della faccia della sede
+    const xOut = xIn + sg * dt.w;
+    const bx = (x0, x1, y0, y1, z0, z1) => box(Math.min(x0, x1), Math.max(x0, x1), y0, y1, z0, z1);
+    const [py0, py1] = dt.postY;
+    const s0 = xIn - sg * dt.slot;
+    const s1 = xOut + sg * dt.slot;
+    detentCuts.push(
+      bx(s0, xIn, dt.yRoot, dt.yTip + dt.slot, d.zLid - dt.relief, d.H + 1),
+      bx(xOut, s1, dt.yRoot, dt.yTip + dt.slot, d.zLid - dt.relief, d.H + 1),
+      bx(s0, s1, dt.yTip, dt.yTip + dt.slot, d.zLid - dt.relief, d.H + 1),
+      // gioco tra la linguetta e la barra
+      bx(s0, s1, d.yBarFront - 0.1, dt.yTip + dt.slot, d.zLid - dt.relief, d.zLid + 0.01),
+      // vano del pilastrino: aperto verso la sede in alto e sotto la barra in basso
+      bx(xIn - sg * dt.clrIn, xOut + sg * dt.clrOut, py0 - dt.clrY, py1 + dt.clrY, dt.postZ0 - 0.3, d.zLid + 0.01),
+      bx(xIn - sg * dt.clrIn, xOut + sg * dt.clrOut, py0 - dt.clrY, py1 + dt.clrY, d.zBarBottom - 1, dt.postZ0 - 0.3 + 0.01),
+    );
+    const post = bx(xIn, xOut, py0, py1, dt.postZ0, d.zLid + 0.01);
+    // dentino: prisma verticale con profilo a trapezio nel piano XY (fianchi a 35°);
+    // la punta resta più stretta del fondo della gola qualunque sia la sporgenza
+    const reach = d.seatAF / 2 - dt.nubTip;
+    const yc = dt.nubY;
+    const half1 = dt.nubHalfTip;
+    const half0 = Math.min(Math.min(yc - py0, py1 - yc) - 0.2, half1 + reach / Math.tan((dt.nubAng * Math.PI) / 180));
+    const nubPts = [];
+    for (const z of dt.nubZ) {
+      nubPts.push([xIn + sg * 0.01, yc - half0, z], [xIn + sg * 0.01, yc + half0, z],
+        [xIn - sg * reach, yc - half1, z], [xIn - sg * reach, yc + half1, z]);
+    }
+    // smusso a 45° sopra il dentino: in stampa è il lato sotto, niente sbalzo piatto
+    const zc = dt.nubZ[1] + reach;
+    nubPts.push([xIn + sg * 0.01, yc - Math.max(0.05, half0 - reach), zc], [xIn + sg * 0.01, yc + Math.max(0.05, half0 - reach), zc]);
+    const nub = hull(nubPts);
+    detentParts.push(post, nub);
+    detentMoving.push(post, nub, bx(xIn, xOut, dt.yRoot + 1, dt.yTip, d.zLid, d.H));
+  });
+
   let lid = union(lidParts);
-  lid = T(lid.subtract(union([...sockets, tongueSlots, mirrorX(tongueSlots), thumb])));
+  lid = T(lid.subtract(union([...sockets, tongueSlots, mirrorX(tongueSlots), thumb, ...arches, ...detentCuts, stopPocket, mirrorX(stopPocket)])));
+  lid = T(lid.add(union(detentParts)));
+  const detentNubs = union(detentParts.filter((_, k) => k % 2 === 1));
 
   // ============================================================ ASTE E ANELLI
   const rodAlongZ = (len) => {
@@ -200,7 +302,20 @@ export function buildSolids(wasm, params) {
     const taper = T(Manifold.revolve([[
       [0, -0.01], [r - 0.4, -0.01], [r + 0.05, 0.45], [r + 0.05, len - p.rodTip], [0.9, len + 0.01], [0, len + 0.01],
     ]], 48));
-    return T(prism.intersect(taper));
+    // gola esagonale dove scatta il dentino, con fianchi a 35°
+    const nk = d.neck;
+    const rN = nk.af / Math.sqrt(3);
+    const flank = (p.rodAF - nk.af) / 2 / Math.tan((nk.ang * Math.PI) / 180);
+    const za = len - nk.fromTip - nk.floor / 2;
+    const zb = za + nk.floor;
+    const slab = (rr, z) => T(T(Manifold.extrude(hexCS(rr, 0, 0), 0.001)).translate([0, 0, z]));
+    const core = union([
+      hull([slab(r + 0.01, za - flank), slab(rN, za)]),
+      T(T(Manifold.extrude(hexCS(rN, 0, 0), nk.floor)).translate([0, 0, za])),
+      hull([slab(rN, zb), slab(r + 0.01, zb + flank)]),
+    ]);
+    const neck = T(box(-r - 1, r + 1, -r - 1, r + 1, za - flank, zb + flank).subtract(core));
+    return T(T(prism.intersect(taper)).subtract(neck));
   };
   const rodZ = rodAlongZ(d.rodLen);
   // in assieme: asse lungo +Y, coda in Y = 0, un vertice in alto (come le sedi)
@@ -216,10 +331,10 @@ export function buildSolids(wasm, params) {
   // in assieme: asse lungo Y, centrato nell'origine
   const ring = T(T(ringZ.translate([0, 0, -p.ringL / 2])).rotate([-90, 0, 0]));
 
-  const magnet = coneX(-MAGNET.h / 2, MAGNET.h / 2, 0, 0, MAGNET.d / 2, MAGNET.d / 2);
-
   return {
-    d, base, lid, rod, rodZ, ring, ringZ, magnet, rodAlongZ,
+    d, base, lid, rod, rodZ, ring, ringZ, rodAlongZ, detentNubs, detentMoving, notchAt,
+    stopNubs: union([stopNub, mirrorX(stopNub)]), stopBumps: union([stopBump, mirrorX(stopBump)]),
+    stopBeams: union([stopBeam, mirrorX(stopBeam)]),
     T, box, union, extX, extY, coneX, circ, rect, poly, union2, hexCS,
     baseKnuckleCS, lidKnuckleCS, wasm,
     dispose() { for (const o of pool) o.delete(); pool.length = 0; },
@@ -295,7 +410,7 @@ export function buildPrintLayouts(s) {
 // Piatto di prova: 3 anelli, spezzone d'asta, tratto di barra con 2 sedi,
 // tratto di binario da 3 anelli con tacca, nocca di cerniera print in place.
 function buildTestPlate(s) {
-  const { d, T, box, union, extX, extY, coneX, hexCS, union2, circ, rect } = s;
+  const { d, T, box, union, extX, extY, coneX, union2, circ, rect } = s;
   const { Manifold } = s.wasm;
   const p = d.p;
   const parts = [];
@@ -307,14 +422,16 @@ function buildTestPlate(s) {
   const rod30 = T(T(T(s.rodAlongZ(30).rotate([0, 90, 0])).translate([0, 0, p.rodAF / 2])).translate([0, 14, 0]));
   parts.push(rod30);
 
-  // tratto di barra con 2 sedi, orientato come nella stampa del coperchio
-  const barW = 2 * d.pitch + 2;
-  const barH = d.zLid - d.zBarBottom;
-  const seatZ = d.lidT + (d.zLid - d.zAxis);
-  let bar = box(0, barW, 0, d.seatDepth + d.barBackWall, 0, d.lidT + barH);
-  const seats = union2([hexCS(d.seatAC / 2, 1 + d.pitch / 2, seatZ), hexCS(d.seatAC / 2, 1 + 1.5 * d.pitch, seatZ)]);
-  bar = T(bar.subtract(extY(seats, -1, d.seatDepth)));
-  parts.push(T(bar.translate([40, 0, 0])));
+  // ritaglio del coperchio vero con 2 sedi e i loro scatti (linguetta, pilastrino,
+  // dentino), a faccia in giù come nella stampa della scatola
+  const dt = d.detent;
+  const sg1 = d.detentSide[1];
+  const cx0 = d.chX[0] - d.seatAC / 2 - 1.5;
+  const cx1 = d.chX[1] + sg1 * (d.seatAF / 2 + dt.w + dt.slot) + 0.8;
+  let coupon = T(s.lid.intersect(box(Math.min(cx0, cx1), Math.max(cx0, cx1), dt.yRoot - 5, d.yBarBack - 0.2, -1, d.H + 1)));
+  coupon = T(coupon.rotate([180, 0, 0]));
+  const cb = coupon.boundingBox();
+  parts.push(T(coupon.translate([40 - cb.min[0], -cb.min[1], -cb.min[2]])));
 
   // tratto di binario da 3 anelli, con la tacca frontale
   const chLen = 3 * p.ringL + 2;
@@ -322,8 +439,7 @@ function buildTestPlate(s) {
   let ch = union([box(-halfW, halfW, 0, d.frontT + chLen, 0, d.ribTop), box(-halfW, halfW, 0, d.frontT, 0, d.frontTop)]);
   const groove = union2([circ(d.chR, 0, d.floor + d.chR), rect(-d.chR, d.chR, d.floor + d.chR, d.ribTop + 1)]);
   ch = T(ch.subtract(extY(groove, d.frontT, d.frontT + chLen + 1)));
-  const notch = union2([circ(d.notchW / 2, 0, d.zAxis, 48), rect(-d.notchW / 2, d.notchW / 2, d.zAxis, d.frontTop + 1)]);
-  ch = T(ch.subtract(extY(notch, -1, d.frontT + 0.01)));
+  ch = T(ch.subtract(extY(union2(s.notchAt(0)), -1, d.frontT + 0.01)));
   parts.push(T(ch.translate([80, 0, 0])));
 
   // nocca di cerniera print in place: L | B | L, stessa sezione della scatola
@@ -412,7 +528,6 @@ export function buildModel(wasm, params) {
         lid: meshData(s.lid),
         rod: meshData(s.rod),
         ring: meshData(s.ring),
-        magnet: meshData(s.magnet),
       },
       stats: { base: stats(s.base), lid: stats(s.lid), rod: stats(s.rod), ring: stats(s.ring) },
       parts,

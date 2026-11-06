@@ -40,7 +40,7 @@ export class Director {
     if (!this.saved) return;
     const s = this.viewer.state;
     const v = this.saved;
-    Object.assign(s, { theta: v.theta, rodPull: v.rodPull, rodsVisible: v.rodsVisible, xray: v.xray, section: v.section, shake: [0, 0, 0, 0], magnetGlow: 0 });
+    Object.assign(s, { theta: v.theta, rodPull: v.rodPull, rodsVisible: v.rodsVisible, xray: v.xray, section: v.section, shake: [0, 0, 0, 0] });
     s.rings.forEach((r, i) => {
       const o = v.rings[i];
       Object.assign(r, { frame: o.frame, x: o.x, u: o.u, roll: o.roll, lift: o.lift, hidden: o.hidden });
@@ -53,7 +53,6 @@ export class Director {
   finish(cancelled) {
     const s = this.viewer.state;
     s.shake = [0, 0, 0, 0];
-    s.magnetGlow = 0;
     if (this.saved) this.restore();
     else if (cancelled) this.settle();
     this.current = null;
@@ -196,7 +195,7 @@ export const SEQUENCES = {
       await openLid(c, 0, 1500);
     }
     await c.view('chiusa', 900);
-    c.caption(1, 6, 'Sfila le aste', 'A scatola chiusa si sfilano le 6 aste dalle tacche della parete frontale: gli anelli restano liberi dentro la scatola.');
+    c.caption(1, 6, 'Sfila le aste', 'A scatola chiusa si tira ogni asta per la coda: dopo un piccolo scatto esce dalla tacca della parete frontale e gli anelli restano liberi dentro la scatola.');
     s.xray = true;
     await pullRods(c, true);
     s.rodsVisible = false;
@@ -207,11 +206,11 @@ export const SEQUENCES = {
     await c.wait(1400);
     await c.view('chiusa', 900);
     s.rodsVisible = true;
-    c.caption(3, 6, 'Reinfila le aste', 'Sempre a scatola chiusa: ogni asta passa dalla sua tacca, attraversa gli anelli del binario e si innesta nella barra in fondo.');
+    c.caption(3, 6, 'Reinfila le aste', 'Sempre a scatola chiusa: ogni asta passa dalla sua tacca, attraversa gli anelli del binario e scatta in sede nella barra in fondo.');
     await pullRods(c, false);
     s.xray = false;
     await c.wait(300);
-    c.caption(4, 6, 'Apri il coperchio a 90°', 'La barra è solidale al coperchio: le aste si alzano in verticale, i magneti tengono il coperchio aperto e gli anelli scivolano fino alla barra.');
+    c.caption(4, 6, 'Apri il coperchio a 90°', 'La barra è solidale al coperchio: le aste si alzano in verticale, il fermo a scatto ai lati della cerniera tiene il coperchio a 90° e gli anelli scivolano fino alla barra.');
     await c.view('home', 800);
     await openLid(c, 90, 2200);
     await play.slideDown(c.token, c.speed());
@@ -234,7 +233,7 @@ export const SEQUENCES = {
   async apri(c) {
     const { s, play } = c;
     s.section = null;
-    c.caption(null, null, 'Apri', 'Il coperchio si ferma a 90° grazie ai magneti; gli anelli scivolano fino alla barra.');
+    c.caption(null, null, 'Apri', 'Il coperchio scatta e si ferma a 90°; gli anelli scivolano fino alla barra.');
     await c.view('home', 600);
     await openLid(c, 90, 1800);
     await play.slideDown(c.token, c.speed());
@@ -343,11 +342,12 @@ export const SEQUENCES = {
     await c.view('sezioneCerniera', 900);
     c.caption(1, 3, 'Asse a metà altezza', `L'asse è a ${d.zHinge.toFixed(0)} mm, metà dell'altezza: così la scatola si stampa aperta a 180° con base e coperchio entrambi appoggiati sul piatto.`);
     await c.wait(2200);
-    c.caption(2, 3, 'Stampata in un pezzo', `Nocche alternate di base e coperchio con perni conici a 45° e gioco di ${d.p.hingeClearance} mm: escono dalla stampa già montate e ruotano subito.`);
-    await openLid(c, 180, 2600);
+    c.caption(2, 3, 'Stampata in un pezzo, aperta a 180°', `Nocche alternate di base e coperchio con perni conici a 45° e gioco di ${d.p.hingeClearance} mm: escono dalla stampa già montate. La barra ruota sempre davanti alla cerniera e non tocca mai la base.`);
+    await c.t(s, { theta: 180 }, 2600, ease.inOut);
     await c.wait(900);
-    c.caption(3, 3, 'Sempre davanti all\'asse', 'La barra ruota restando davanti alla cerniera e non tocca mai la base. Le aste si sfilano e si infilano: il loro giunto è separato dalla cerniera.');
-    await openLid(c, 90, 1800);
+    c.caption(3, 3, 'Il primo scatto', 'Alla prima chiusura le guance del coperchio scavalcano i due dentini del fermo, una volta sola: da lì il coperchio si apre solo fino a 90°.');
+    await c.t(s, { theta: 90 }, 1800, ease.inOut);
+    clack();
     await c.wait(700);
     await openLid(c, 0, 1600);
   },
@@ -372,24 +372,27 @@ export const SEQUENCES = {
     await c.wait(1500);
   },
 
-  async magneti(c) {
+  async fermo(c) {
     const { s, d } = c;
+    const st = d.stop;
     c.snapshot();
     s.theta = 0;
-    s.xray = true;
-    s.section = null;
-    s.magnetGlow = 0.15;
-    await c.view('magneti', 900);
-    c.caption(1, 3, 'Quattro magneti, una pausa', `Due magneti nelle guance del coperchio e due nelle pareti laterali, tutti con l'asse orizzontale. Le loro sedi finiscono alla stessa quota (${d.pauseZ.toFixed(1)} mm): basta una pausa di stampa.`);
-    await c.wait(2200);
-    c.caption(2, 3, 'Si allineano a 90°', 'Aprendo, i magneti del coperchio scorrono accanto a quelli della base e a 90° si trovano faccia a faccia: il coperchio resta aperto da solo.');
-    await c.t(s, { theta: 90 }, 2400, ease.inOut, () => { s.magnetGlow = 0.15 + 0.85 * Math.max(0, 1 - Math.abs(s.theta - 90) / 25); });
+    s.xray = false;
+    s.section = { axis: 'x', value: d.lidHalf - st.depth / 2 };
+    await c.view('fermo', 900);
+    c.caption(1, 3, 'Un dentino per lato', `Nella parete laterale, sotto l'asse della cerniera, un dentino su una linguetta flessibile entra di ${st.depth} mm nel percorso della guancia del coperchio. Nessun magnete, nessuna pausa di stampa.`);
+    await c.wait(2400);
+    c.caption(2, 3, 'Scatta a 90°', `Aprendo, un rilievo sotto la guancia spinge di lato il dentino di ${st.bump} mm e lo scavalca: clic. A 90° la faccia della guancia batte sul dentino e il coperchio non va oltre.`);
+    await openLid(c, 90, 2400);
+    await c.t(s, { theta: 91 }, 200, ease.out);
+    await c.t(s, { theta: 90 }, 300, ease.inOut);
+    await c.wait(1200);
+    c.caption(3, 3, 'Tiene nei due versi', `Per richiudere, il rilievo deve riscavalcare il dentino: servono circa ${d.stopClickForce.toFixed(1)} N sul bordo del coperchio. Il peso da solo non basta.`);
+    await c.wait(1200);
+    await c.t(s, { theta: 75 }, 900, ease.inOut);
     clack();
-    await c.wait(800);
-    c.caption(3, 3, 'Nessuna battuta rigida', 'Il fermo è magnetico: oltre i 90° il coperchio è libero di arrivare a 180°, la posizione in cui si stampa.');
-    await c.t(s, { theta: 125 }, 900, ease.inOut, () => { s.magnetGlow = 0.15 + 0.85 * Math.max(0, 1 - Math.abs(s.theta - 90) / 25); });
-    await c.t(s, { theta: 90 }, 700, ease.out, () => { s.magnetGlow = 0.15 + 0.85 * Math.max(0, 1 - Math.abs(s.theta - 90) / 25); });
-    clack();
+    await c.wait(500);
+    await openLid(c, 90, 900);
     await c.wait(900);
   },
 
@@ -413,7 +416,7 @@ export const SEQUENCES = {
     c.v.setMode('stampa');
     try {
       await c.view('stampa', 1000);
-      c.caption(1, 1, 'Piatti di stampa, nessun supporto', 'Scatola aperta a 180° (pausa per i magneti), 40 anelli in piedi (un piatto per colore senza AMS), 6 aste distese su una faccia. Prima: il piatto di prova per tarare i giochi e la stampa prova, una scatola mini con un\'asta e un anello per provare il meccanismo.');
+      c.caption(1, 1, 'Piatti di stampa, nessun supporto', 'Scatola aperta a 180° senza pause, 40 anelli in piedi (un piatto per colore senza AMS), 6 aste distese su una faccia. Prima: il piatto di prova per tarare i giochi e la stampa prova, una scatola mini con un\'asta e un anello per provare il meccanismo.');
       await c.wait(5000);
     } finally {
       c.v.setMode('modello');

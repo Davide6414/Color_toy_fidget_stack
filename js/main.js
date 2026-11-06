@@ -1,7 +1,7 @@
 // Interfaccia del gioco ordina-colori.
 import { zipSync } from 'fflate';
 import { loadManifold, buildModel } from './geometry.js';
-import { DEFAULT_PARAMS, PARAM_SPECS, MAGNET } from './params.js';
+import { DEFAULT_PARAMS, PARAM_SPECS } from './params.js';
 import { toBinarySTL } from './stl.js';
 import { Viewer, createState } from './viewer.js';
 import { Director } from './sequences.js';
@@ -189,7 +189,7 @@ function downloadPart(id) {
 function downloadZip() {
   const files = {};
   for (const part of model.parts) files[fileName(part.file)] = toBinarySTL(part.print, part.id);
-  files['parametri.json'] = new TextEncoder().encode(JSON.stringify({ parametri: params, pausaMagnetiZ: model.dims.pauseZ }, null, 2));
+  files['parametri.json'] = new TextEncoder().encode(JSON.stringify({ parametri: params }, null, 2));
   download(isDefault() ? 'ordina-colori-stl.zip' : 'ordina-colori-stl-custom.zip', zipSync(files, { level: 6 }), 'application/zip');
 }
 
@@ -204,8 +204,8 @@ function renderParts() {
     {
       title: 'Scatola print in place', qty: '×1', swatch: `--sw:${P('scatola').color}`,
       meta: `Chiusa ${num(d.width)} × ${num(d.length)} × ${num(d.H)} mm · aperta ${num(d.openLength, 0)} mm`,
-      text: 'Base con 6 binari a U e tacche, coperchio con la barra delle sedi, cerniera a nocche alternate, linguette di chiusura. Si stampa in un pezzo, aperta a 180°.',
-      stats: [`≈ ${num(g(P('scatola')), 0)} g pieno`, `pausa a Z ${num(d.pauseZ, 1)} mm`, 'nessun supporto'],
+      text: 'Base con 6 binari a U e tacche, coperchio con la barra delle sedi, cerniera a nocche alternate, linguette di chiusura. Nel coperchio 6 linguette più piccole spingono un dentino in ogni sede: le aste scattano in posizione e non escono da sole. Ai lati della cerniera il fermo a scatto tiene il coperchio a 90°. Si stampa in un pezzo, aperta a 180°, senza pause.',
+      stats: [`≈ ${num(g(P('scatola')), 0)} g pieno`, 'nessuna pausa', 'nessun supporto'],
       anim: 'cerniera', files: ['scatola'],
     },
     {
@@ -218,29 +218,29 @@ function renderParts() {
     {
       title: 'Aste', qty: '×6', swatch: `--sw:${P('aste').color}`,
       meta: `Esagono ${num(d.p.rodAF, 0)} mm tra le facce · lunghe ${num(d.rodLen, 0)} mm`,
-      text: `Punta conica di ${num(d.p.rodTip, 0)} mm che entra per prima e si innesta per ${num(d.seatDepth, 0)} mm nella barra; coda liscia che sporge ${num(d.p.rodTail, 0)} mm dalla parete per sfilarla.`,
+      text: `Punta conica di ${num(d.p.rodTip, 0)} mm che entra per prima e si innesta per ${num(d.seatDepth, 0)} mm nella barra; a ${num(d.neck.fromTip, 1)} mm dalla punta una gola dove scatta il dentino della sede. Coda liscia che sporge ${num(d.p.rodTail, 0)} mm dalla parete per sfilarla.`,
       stats: [`≈ ${num(g(P('asta')), 1)} g l'una`, 'distese su una faccia'],
       anim: 'barra', files: ['aste', 'asta'],
     },
     {
-      title: 'Magneti al neodimio', qty: '×4', swatch: '--sw:#aeb4bd',
-      meta: `Ø ${MAGNET.d} × ${MAGNET.h} mm (N35 o superiore), da acquistare`,
-      text: 'Due nelle guance posteriori del coperchio e due nelle pareti laterali: tengono il coperchio aperto a 90°. Si infilano durante una sola pausa di stampa.',
-      stats: ['unico montaggio', 'attenzione alla polarità'],
-      anim: 'magneti', files: [],
+      title: 'Fermo a scatto a 90°', qty: '×2', swatch: `--sw:${P('scatola').color}`,
+      meta: 'Nella scatola, ai lati della cerniera: niente da comprare né da montare',
+      text: `Nelle pareti laterali, sotto l'asse, un dentino su una linguetta flessibile. A 90° la guancia del coperchio ci batte contro; un rilievo sotto la guancia lo scavalca con un clic aprendo e chiudendo. Alla prima chiusura dopo la stampa le guance lo superano una volta sola.`,
+      stats: [`per chiudere ≈ ${num(d.stopClickForce, 1)} N`, `linguetta ${num(d.stopClickStrain * 100, 2)}% a ogni scatto`],
+      anim: 'fermo', files: [],
     },
     {
       title: 'Piatto di prova', qty: '×1', swatch: `--sw:${P('prova').color}`,
       meta: 'Da stampare prima della scatola',
-      text: '3 anelli, spezzone d\'asta da 30 mm con la punta, tratto di barra con 2 sedi, tratto di binario da 3 anelli con la tacca, nocca di cerniera print in place.',
-      stats: ['per tarare i giochi'],
+      text: '3 anelli, spezzone d\'asta da 30 mm con la punta e la gola, ritaglio del coperchio vero con 2 sedi e i loro scatti, tratto di binario da 3 anelli con la tacca, nocca di cerniera print in place.',
+      stats: ['per tarare i giochi e lo scatto'],
       anim: 'stampa', files: ['prova'],
     },
     {
       title: 'Stampa prova', qty: '×1', swatch: `--sw:${P('mini').color}`,
       meta: `Scatola mini ${num(m.width)} × ${num(m.length)} × ${num(m.H)} mm · un piatto ${num(miniX, 0)} × ${num(miniY, 0)} mm`,
-      text: `La stessa scatola con ${m.n} binari da ${m.p.capacity} anelli, più un'asta da ${num(m.rodLen, 0)} mm e un anello. Anelli, aste, giochi, cerniera, linguette e magneti sono a misura vera: è il meccanismo completo in piccolo, da provare prima della scatola grande.`,
-      stats: [`≈ ${num(g(P('mini')), 0)} g pieno`, `pausa a Z ${num(m.pauseZ, 1)} mm`, '4 magneti'],
+      text: `La stessa scatola con ${m.n} binari da ${m.p.capacity} anelli, più un'asta da ${num(m.rodLen, 0)} mm e un anello. Anelli, aste, giochi, cerniera, linguette e fermi sono a misura vera: è il meccanismo completo in piccolo, da provare prima della scatola grande.`,
+      stats: [`≈ ${num(g(P('mini')), 0)} g pieno`, 'nessuna pausa'],
       files: ['mini'],
     },
   ];
@@ -310,8 +310,10 @@ function renderDims() {
     ['Scatola chiusa', `${num(d.width, 1)} × ${num(d.length, 1)} × ${num(d.H, 1)} mm`],
     ['Scatola aperta (stampa)', `${num(d.width, 1)} × ${num(d.openLength, 1)} mm`],
     ['Asse cerniera', `y ${num(d.yHinge, 1)} · z ${num(d.zHinge, 1)} mm (metà altezza)`],
-    ['Pausa per i magneti', `Z = ${num(d.pauseZ, 2)} mm`],
+    ['Fermo a 90°', `dentino ${num(d.stop.depth, 1)} mm, scatto ${num(d.stop.bump, 1)} mm, per chiudere ≈ ${num(d.stopClickForce, 1)} N`],
     ['Flessione linguette', `${num(d.tongue.nub - d.p.hingeClearance, 2)} mm, ${num(d.tongueStrain * 100, 2)}%`],
+    ['Archi nella gonna', `R ${num(d.archR, 1)} sopra ogni tacca: a 90° gli anelli escono dalla coda`],
+    ['Scatto aste', `dentino ${num(d.p.rodDetent, 2)} mm, per sfilare ≈ ${num(d.detentPull, 1)} N, poi ${num(d.detentDrag, 2)} N`],
   ];
   $('#dims').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
 }
@@ -356,14 +358,16 @@ function renderPrintGuide() {
     ['mini-cerniera', 'Cerniera: si sblocca e il coperchio gira da chiuso a 180°.'],
     ['mini-chiusura', 'Chiusura: le linguette scattano e tengono chiuso mentre agiti.'],
     ['mini-asta', 'Asta: entra dalla tacca, attraversa l\'anello disteso nel binario e si innesta nella barra.'],
-    ['mini-magneti', 'Fermo a 90°: i magneti tengono il coperchio aperto con l\'asta in piedi.'],
-    ['mini-anello', 'Anello: a 90° scivola fino alla barra; richiudendo torna disteso nel binario.'],
+    ['mini-scatto', 'Scatto: in fondo alla sede l\'asta scatta, non esce capovolgendo la scatola chiusa e si sfila tirando la coda.'],
+    ['mini-fermo', 'Fermo a 90°: alla prima chiusura scatta una volta; poi il coperchio si apre fino a 90° con un clic, non va oltre e resta aperto.'],
+    ['mini-anello', 'Anello: a 90° scivola fino alla barra, esce dalla cima dell\'asta passando sotto la gonna; richiudendo torna disteso nel binario.'],
   ];
   const checklist = (list) => list.map(([k, t]) => `<li><label><input type="checkbox" data-check="${k}" ${checks[k] ? 'checked' : ''}><span>${t}</span></label></li>`).join('');
   const items = [
     ['anelli', '3 anelli: scorrono sullo spezzone d\'asta senza forzare e senza ballare.'],
     ['asta', 'Spezzone d\'asta da 30 mm: la punta entra negli anelli e nelle sedi.'],
-    ['sedi', 'Tratto di barra con 2 sedi: l\'asta entra a mano e resta dritta.'],
+    ['sedi', 'Ritaglio del coperchio: l\'asta entra a mano, resta dritta e scatta in fondo alla sede.'],
+    ['scatto', 'Scatto: lo spezzone si sfila tirandolo con due dita ma non esce da solo capovolgendo il ritaglio. Troppo duro o troppo morbido: regola lo scatto aste.'],
     ['binario', 'Tratto di binario da 3 anelli: gli anelli si distendono, l\'asta passa dalla tacca.'],
     ['cerniera', 'Nocca di cerniera: si sblocca con una leggera torsione e ruota liberamente.'],
   ];
@@ -372,11 +376,11 @@ function renderPrintGuide() {
     <div class="table-wrap"><table>
       <thead><tr><th>Piatto</th><th>Orientamento</th><th>Note</th></tr></thead>
       <tbody>
-        <tr><td>Scatola</td><td>Aperta a 180°: base col fondo giù, coperchio con la faccia esterna giù (${num(d.width, 0)} × ${num(d.openLength, 0)} mm)</td><td>Pausa a Z = ${num(d.pauseZ, 1)} mm per i 4 magneti</td></tr>
+        <tr><td>Scatola</td><td>Aperta a 180°: base col fondo giù, coperchio con la faccia esterna giù (${num(d.width, 0)} × ${num(d.openLength, 0)} mm)</td><td>Nessuna pausa</td></tr>
         <tr><td>Anelli</td><td>In piedi, foro verticale, 10 per piatto</td><td>Un piatto per colore, oppure i 40 insieme con l'AMS</td></tr>
         <tr><td>Aste</td><td>Distese su una faccia dell'esagono</td><td>Strati lungo tutta la lunghezza</td></tr>
-        <tr><td>Piatto di prova</td><td>Come la scatola</td><td>Prima della scatola, per tarare i giochi</td></tr>
-        <tr><td>Stampa prova</td><td>Un piatto: scatola mini aperta a 180°, asta distesa, anello in piedi (${num(miniX, 0)} × ${num(miniY, 0)} mm)</td><td>Dopo il piatto di prova. Pausa a Z = ${num(m.pauseZ, 1)} mm per 4 magneti</td></tr>
+        <tr><td>Piatto di prova</td><td>Come la scatola</td><td>Prima della scatola, per tarare i giochi e lo scatto delle aste</td></tr>
+        <tr><td>Stampa prova</td><td>Un piatto: scatola mini aperta a 180°, asta distesa, anello in piedi (${num(miniX, 0)} × ${num(miniY, 0)} mm)</td><td>Dopo il piatto di prova, per provare cerniera, chiusura e fermo a 90°</td></tr>
       </tbody>
     </table></div>
     <p>Gli STL sono già orientati. Nessun pezzo richiede supporti o brim.</p>
@@ -389,27 +393,20 @@ function renderPrintGuide() {
       <li>Disattiva "pulizia" e "ironing" sulla scatola: le fessure della cerniera sono da ${num(d.p.hingeClearance, 1)} mm.</li>
     </ul>
 
-    <h2>La pausa per i magneti</h2>
-    <div class="callout">Nel cursore degli strati di Bambu Studio, clic destro sullo strato che finisce a <strong>${num(d.pauseZ, 1)} mm</strong> → <em>Aggiungi pausa</em>. Alla pausa le 4 sedi sono aperte in alto: infila i magneti di taglio e riprendi la stampa.</div>
-    <ol>
-      <li>Prima della stampa attacca i magneti a coppie (uno su l'altro) e segna con un pennarello la faccia libera di ognuno.</li>
-      <li>Nelle due sedi della <strong>base</strong> (pareti laterali, vicino alla cerniera) metti i magneti con il segno verso <strong>l'esterno</strong> della scatola.</li>
-      <li>Nelle due sedi del <strong>coperchio</strong> (guance posteriori) metti gli altri con il segno verso <strong>l'interno</strong>: così le facce che si attraevano si ritrovano affacciate a 90°.</li>
-      <li>Premi i magneti fino in fondo: non devono sporgere sopra il piano di stampa.</li>
-    </ol>
-
     <h2>Dopo la stampa</h2>
     <ol>
-      <li>Stacca il pezzo dal piatto e piega delicatamente il coperchio verso la base: la cerniera si sblocca al primo movimento.</li>
+      <li>Stacca il pezzo dal piatto e piega delicatamente il coperchio verso la base: la cerniera si sblocca al primo movimento. Passati i 90° senti due scatti più decisi ai lati della cerniera: le guance scavalcano i dentini del fermo, una volta sola. Da lì il coperchio si apre solo fino a 90°.</li>
       <li>Chiudi il coperchio: le linguette devono scattare ai due angoli anteriori.</li>
-      <li>Infila le aste dalle tacche, punta per prima, fino in fondo alla barra. Fatto: nessun altro montaggio.</li>
+      <li>Con il coperchio aperto guarda sotto la barra: ogni pilastrino dello scatto ha un vano aperto. Passa una lama sottile (o uno spessimetro da 0,3) attorno al pilastrino per togliere eventuali fili.</li>
+      <li>Infila le aste dalle tacche, punta per prima e appoggiate sul fondo della tacca, finché scattano in fondo alla barra. La prima volta lo scatto è più duro. Fatto: nessun altro montaggio.</li>
+      <li>Non premere con oggetti a punta sulle 6 fessure a U vicino alla cerniera: sono le linguette dello scatto.</li>
     </ol>
 
     <h2>Piatto di prova</h2>
     <ul class="checklist">${checklist(items)}</ul>
 
     <h2>Stampa prova</h2>
-    <p>La scatola mini ha ${m.n} binari da ${m.p.capacity} anelli e misura ${num(m.width, 1)} × ${num(m.length, 1)} mm, ma anelli, aste, giochi, cerniera, linguette e magneti sono quelli veri. Si stampa in un piatto con un'asta e un anello, con la stessa pausa a ${num(m.pauseZ, 1)} mm. Non è in scala 1:2: l'asta diventerebbe un esagono da 2 mm e i magneti non entrerebbero nelle pareti.</p>
+    <p>La scatola mini ha ${m.n} binari da ${m.p.capacity} anelli e misura ${num(m.width, 1)} × ${num(m.length, 1)} mm, ma anelli, aste, giochi, cerniera, linguette e fermi sono quelli veri. Si stampa in un piatto con un'asta e un anello, senza pause. Non è in scala 1:2: l'asta diventerebbe un esagono da 2 mm e la cerniera uscirebbe saldata.</p>
     <ul class="checklist">${checklist(miniItems)}</ul>
 
     <h2>Se qualcosa non va</h2>
@@ -417,7 +414,8 @@ function renderPrintGuide() {
       <li><strong>Anelli duri sulle aste</strong>: aumenta il gioco anello ↔ asta (Parametri) e ristampa gli anelli.</li>
       <li><strong>Aste che non entrano o ballano nella barra</strong>: regola il gioco asta ↔ sede.</li>
       <li><strong>Cerniera saldata</strong>: aumenta il gioco cerniera a 0,35–0,4 mm e verifica il piede d'elefante.</li>
-      <li><strong>Aste difficili da sfilare</strong>: porta la sporgenza della coda a 8 mm.</li>
+      <li><strong>Aste che escono da sole a scatola chiusa</strong>: alza lo scatto aste (0,6–0,7 mm). <strong>Troppo dure da sfilare</strong>: abbassalo, o porta la sporgenza della coda a 8 mm.</li>
+      <li><strong>Il coperchio va oltre i 90°</strong>: la linguetta del fermo è saldata alla parete. Passa una lama nella fessura verticale dietro di lei, nella parete laterale vicino alla cerniera.</li>
       <li><strong>Aste che flettono</strong>: stampale in PETG.</li>
     </ul>`;
   $('#print-guide').querySelectorAll('[data-check]').forEach((cb) => cb.addEventListener('change', () => {
@@ -497,7 +495,6 @@ function bindUI() {
     r.addEventListener('change', () => { play.goal = r.value; store.set('goal', r.value); play.won = false; play.checkWin(); solveInfo = null; updateGameUI(); analyse(); });
   });
 
-  $('#btn-zip').addEventListener('click', downloadZip);
   $('#btn-mini').addEventListener('click', () => downloadPart('mini'));
   $('#btn-zip-params').addEventListener('click', downloadZip);
   $('#btn-reset-params').addEventListener('click', () => { params = { ...DEFAULT_PARAMS }; renderParams(); scheduleRebuild(); });
@@ -525,7 +522,6 @@ async function start() {
     viewer.applyView('gioco');
     viewer.setPlayEnabled(true);
     $('#loading').hidden = true;
-    $('#btn-zip').disabled = false;
     $('#btn-mini').disabled = false;
     syncToolbar();
     updateGameUI();

@@ -14,12 +14,14 @@ riallinea da sola, senza toccarli uno a uno.
 
 ## Come si gioca
 
-1. **Sfila le aste.** A scatola chiusa si tirano fuori dalle tacche frontali: gli anelli restano dentro.
+1. **Sfila le aste.** A scatola chiusa si tira ogni asta per la coda: dopo un piccolo scatto scorre libera, gli anelli
+   restano dentro.
 2. **Agita.** Gli anelli sono più lunghi che larghi (10 contro 8 mm): possono fermarsi solo distesi lungo
    i 6 binari, con il foro già in asse.
-3. **Reinfila le aste.** Ognuna attraversa gli anelli del suo binario e si innesta nella barra in fondo.
-4. **Apri il coperchio a 90°.** La barra è solidale al coperchio: le aste si alzano in verticale, i magneti
-   tengono il coperchio aperto e gli anelli scivolano sulla barra.
+3. **Reinfila le aste.** Di punta nella tacca, tenendola appoggiata sul fondo: attraversa gli anelli del binario e
+   scatta in sede nella barra (la coda sporge di 5 mm).
+4. **Apri il coperchio a 90°.** La barra è solidale al coperchio: le aste si alzano in verticale, il coperchio
+   scatta e si ferma a 90°, e gli anelli scivolano sulla barra.
 5. **Gioca.** Un anello alla volta dalla cima di un'asta all'altra, su un'asta vuota o sopra lo stesso
    colore, massimo 10 per asta. Vinci quando ogni asta ha un solo colore.
 6. **Chiudi.** Anche a partita in corso: le aste tornano nei binari con gli anelli infilati.
@@ -28,29 +30,29 @@ riallinea da sola, senza toccarli uno a uno.
 
 | File | Quantità | Orientamento | Note |
 | --- | --- | --- | --- |
-| [scatola.stl](stl/scatola.stl) | 1 | aperta a 180°, già orientata | print in place; **pausa a Z = 9,4 mm** per i magneti |
+| [scatola.stl](stl/scatola.stl) | 1 | aperta a 180°, già orientata | print in place, nessuna pausa |
 | [anelli_x10.stl](stl/anelli_x10.stl) | 4 piatti | in piedi | uno per colore (rosa, verde, giallo, blu), o tutti insieme con l'AMS |
 | [aste_x6.stl](stl/aste_x6.stl) | 1 | distese su una faccia | strati lungo tutta la lunghezza |
-| [piatto_di_prova.stl](stl/piatto_di_prova.stl) | 1 | già orientato | da stampare prima, per tarare i giochi |
-| [stampa_prova.stl](stl/stampa_prova.stl) | 1 | un piatto, già orientato | poi questa: scatola mini, 1 asta, 1 anello; stessa pausa a Z = 9,4 mm |
-| magneti Ø 6 × 3 mm | 4 | — | da acquistare (N35 o superiore) |
+| [piatto_di_prova.stl](stl/piatto_di_prova.stl) | 1 | già orientato | da stampare prima, per tarare i giochi e lo scatto delle aste |
+| [stampa_prova.stl](stl/stampa_prova.stl) | 1 | un piatto, già orientato | poi questa: scatola mini, 1 asta, 1 anello; prova cerniera, chiusura e fermo a 90° |
 
-**Stampa prova.** Prima dei ~100 g della scatola grande si può provare tutto il meccanismo con circa 30 g: la
-stessa scatola con 3 binari da 3 anelli (chiusa 37,8 × 55 × 20 mm), un'asta da 47 mm e un anello, in un solo
-piatto da 49 × 95 mm. Cerniera, linguette, tacche, sedi, magneti e giochi sono quelli veri. Non è in scala 1:2:
-l'asta diventerebbe un esagono da 2 mm, la parete degli anelli 0,55 mm, e i magneti 6 × 3 non entrerebbero
-nelle pareti. Con meno di 3 binari le guance dei magneti del coperchio finiscono sopra le nocche della base.
+**Stampa prova.** Prima dei ~100 g della scatola grande si può provare tutto il meccanismo con circa 32 g: la
+stessa scatola con 3 binari da 3 anelli (chiusa 37,8 × 59 × 20 mm), un'asta da 51 mm e un anello, in un solo
+piatto da 49 × 103 mm. Cerniera, linguette, fermi, tacche, sedi e giochi sono quelli veri. Non è in scala 1:2:
+l'asta diventerebbe un esagono da 2 mm, la parete degli anelli 0,55 mm, e i giochi di stampa non si
+possono dimezzare. Con meno di 3 binari le guance del coperchio finiscono sopra le nocche della base.
 Nel sito è il pulsante *Stampa prova* in alto.
 
 Tutto in un file: [ordina-colori-stl.zip](stl/ordina-colori-stl.zip). Nessun supporto, nessun brim.
+Per Bambu Studio c'è anche il progetto con i 6 piatti già pronti, P1S 0.4, 0.20mm Standard e un filamento per
+colore: [ordina-colori-bambu.3mf](stl/ordina-colori-bambu.3mf), il pulsante *Scarica 3MF* in alto nel sito.
 Ugello 0,4, strato 0,2, PLA. Compensazione del piede d'elefante attiva (0,1–0,15 mm).
 
-**Montaggio:** nessuno, a parte i magneti. Alla pausa si infilano di taglio nelle 4 sedi aperte in alto.
-Prima della stampa attaccali a coppie e segna la faccia libera: nelle pareti della base il segno va verso
-l'esterno, nelle guance del coperchio verso l'interno. Finita la stampa si piega il coperchio per sbloccare la
-cerniera, si chiude con uno scatto e si infilano le aste.
+**Montaggio:** nessuno, e niente da comprare. Finita la stampa si piega il coperchio per sbloccare la
+cerniera: passati i 90° le guance scavalcano i due dentini del fermo con uno scatto deciso, una volta sola.
+Poi si chiude con lo scatto delle linguette e si infilano le aste.
 
-Ingombro: scatola chiusa 68,4 × 125 × 20 mm (più 5 mm di code delle aste), aperta 234,8 mm.
+Ingombro: scatola chiusa 68,4 × 129 × 20 mm (più 5 mm di code delle aste), aperta 242,8 mm.
 
 ## Scelte costruttive
 
@@ -59,15 +61,45 @@ Ingombro: scatola chiusa 68,4 × 125 × 20 mm (più 5 mm di code delle aste), ap
   perni conici a 45° e 0,3 mm di gioco.
 - **Barra solidale al coperchio.** Ruota sempre davanti all'asse; i binari finiscono 2 mm prima della barra
   per lasciar passare il suo spigolo inferiore.
-- **Fermo a 90° con 4 magneti, una sola pausa.** Due nelle guance posteriori del coperchio, due nelle pareti
-  laterali, tutti con l'asse orizzontale. A 90° si trovano faccia a faccia attraverso le pareti; non c'è una
-  battuta rigida, quindi il coperchio arriva a 180° per la stampa. Le quattro sedi finiscono alla stessa
-  quota di stampa.
+- **Sedi profonde 12 mm.** L'asta si infila e basta: a tenerla dritta è solo la sede. Tolti i 3 mm della punta
+  conica restano circa 9,7 mm di esagono pieno, e con 0,125 mm di gioco per lato l'asta si inclina al massimo
+  di 1,6–1,8° (3–3,4 mm in cima, 109 mm sopra la barra). Con sedi da 8 mm erano 2,7–3,1° (5–6 mm). Se dal
+  piatto di prova le aste ballano ancora, il gioco asta ↔ sede a 0,075 mm porta a circa 1° (2 mm).
+- **Fermo a scatto a 90°, senza magneti.** A 90° il baricentro del coperchio con aste e anelli sta 1,9 mm
+  dietro l'asse, quindi da solo ricadrebbe oltre i 90°.
+  - In ogni parete laterale, sotto l'asse, la pelle interna è una linguetta lunga 16 mm (si flette nel piano
+    degli strati) con un dentino che entra di 1 mm nel percorso della guancia del coperchio.
+  - Da chiuso a 90° il dentino non tocca niente. A 90° la faccia inferiore della guancia, che passa per l'asse,
+    ci batte contro: la linguetta lavora di punta e il fermo è rigido.
+  - Un rilievo di 0,4 mm sotto la guancia scavalca il dentino con un clic aprendo e chiudendo (0,28% di
+    deformazione): per richiudere servono circa 0,6 N sul bordo del coperchio (1,4 N nella stampa prova).
+  - La scatola si stampa aperta a 180°, con il dentino in una tasca della guancia. Alla prima chiusura uno
+    scivolo lo spinge di lato di 1 mm (0,7%, una volta sola) e da lì il coperchio non torna più oltre i 90°.
+  - Niente magneti e niente pausa: la stampa va in un colpo solo.
 - **Chiusura frontale a scatto.** Due linguette elastiche ricavate nel piano del coperchio (si flettono nel
   piano degli strati, 0,6% di deformazione) con un dentino a 45° che scatta in una sede delle pareti.
-  Non servono altri magneti né altre pause.
-- **Tacche frontali** con il fondo concentrico all'asse dei binari: a scatola chiusa la gonna del coperchio le
-  chiude in alto e diventano fori di guida; aprendo, lasciano salire la coda delle aste.
+  Niente magneti né pause.
+- **Tacche frontali** con il fondo concentrico all'asse dei binari e un invito a 45° di 0,5 mm in cima, che
+  raccoglie la coda dell'asta quando il coperchio si chiude; aprendo, lasciano salire la coda delle aste.
+- **Archi nella gonna.** A 90° la gonna frontale del coperchio sta in cima alle aste, e un anello che esce dalla
+  coda deve passarci sotto. Sopra ogni tacca c'è un arco di raggio D/2 + gioco + 0,5 (4,8 mm), smussato sulle
+  due facce. Senza archi gli anelli non uscirebbero dalle aste. La gonna appoggia ancora sulla parete tra un arco e
+  l'altro (12,5 mm²) e sopra ogni tacca resta una lunetta di 2,35 mm, troppo bassa per un anello.
+- **Scatto delle aste nella sede.** Un'asta in sede gira col coperchio a ogni apertura, quindi lungo la coda,
+  dove passano gli anelli, niente del coperchio può toccarla: la presa sta dentro la sede.
+  - Per ogni sede c'è una linguetta ricavata nel coperchio vicino alla cerniera (1,6 × 20 mm, si flette nel piano
+    degli strati) con un pilastrino che scende nella barra. Sul pilastrino c'è un dentino a 35° che preme sulla
+    faccia dell'asta.
+  - L'asta ha una gola esagonale (3,45 mm tra le facce) a 7,3 mm dalla punta, dove il dentino scatta.
+  - Per sfilarla servono circa 0,75 N (circa 38 volte il suo peso), poi 0,3 N per qualche millimetro.
+    Infilandola, la punta conica spinge via il dentino e in fondo si sente lo scatto. Tiene anche a 90°.
+  - La forza si regola col cursore *Scatto aste* (0,35–0,7 mm, 0,53–1,06 N).
+  - La linguetta si deforma dello 0,19%, la radice del pilastrino lavora a 3,9 MPa attraverso gli strati.
+  - Ogni pilastrino sta in un vano aperto sotto la barra, che dopo la stampa si pulisce con una lama sottile.
+  - Non premere con oggetti a punta sulle 6 fessure del coperchio: una linguetta schiacciata fino in fondo
+    arriva all'1,8% di deformazione.
+  - Una caduta con un colpo deciso sul fronte può far uscire un'asta di qualche millimetro: si rispinge fino
+    allo scatto.
 - **Regole di gioco** come il Color Stack originale (un anello alla volta, solo su asta vuota o sullo stesso
   colore, massimo 10). Nel sito c'è anche la regola libera e un risolutore che dice se la mescolata è
   risolvibile.
@@ -75,11 +107,11 @@ Ingombro: scatola chiusa 68,4 × 125 × 20 mm (più 5 mm di code delle aste), ap
 ## Il sito
 
 - Modello 3D interattivo: scatola aperta e chiusa, sezione lungo un binario, coperchio trasparente, piatti di stampa.
-- Animazione della partita completa (6 passi) e del funzionamento di binari, tacche, barra, cerniera, magneti e linguette.
+- Animazione della partita completa (6 passi) e del funzionamento di binari, tacche, barra, cerniera, fermo a 90° e linguette.
 - Partita giocabile sulle aste verticali, con annulla, suggerimento e risoluzione automatica.
 - Modello parametrico: giochi, sporgenza delle code, capienza, smussi e risoluzione si regolano dal pannello
   *Parametri*; gli STL scaricati usano i valori scelti.
-- Guida di stampa per la P1S con la pausa dei magneti e la lista del piatto di prova.
+- Guida di stampa per la P1S con le liste di controllo del piatto di prova e della stampa prova.
 
 La geometria è generata con [manifold-3d](https://github.com/elalish/manifold) (booleane esatte, mesh sempre
 chiuse) e visualizzata con [three.js](https://threejs.org/). Lo stesso codice gira in Node per produrre gli
@@ -92,7 +124,12 @@ STL della cartella `stl/` e per le verifiche.
 - esclusione delle posizioni sbagliate degli anelli (di traverso, in piedi, sopra un binario pieno);
 - assieme senza compenetrazioni con 10 anelli per binario;
 - rotazione del coperchio da 0° a 180° senza urti, anche con aste e anelli infilati;
-- scatto delle linguette e allineamento dei magneti a 90° con una sola pausa;
+- scatto delle linguette di chiusura;
+- fermo a 90°: nessun contatto da 0° a 90° tranne il rilievo dello scatto, battuta oltre i 90°, passaggio
+  unico dalla stampa a 180°, gioco di stampa attorno al dentino, linguette staccate da fondo e parete;
+- a 90°, anelli che escono dalla coda di ogni asta senza toccare la gonna, spostati quanto permette il foro;
+- scatto delle aste: flessione del dentino in sede, sulla gola, sulla faccia e ad asta libera; forze,
+  deformazioni, giochi di stampa di linguette e pilastrini, vani aperti sotto la barra;
 - piatti di stampa entro i 256 mm;
 - regole e risolutore della partita.
 
@@ -119,6 +156,7 @@ tools/build-stl.mjs   genera stl/*.stl e lo zip
 npm install
 npm test            # geometria e logica di gioco
 npm run build:stl   # rigenera gli STL
+npm run build:3mf   # rigenera il progetto Bambu Studio (serve Bambu Studio installato)
 npm run serve       # http://localhost:8080
 ```
 

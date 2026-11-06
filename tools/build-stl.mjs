@@ -8,7 +8,8 @@ import { toBinarySTL } from '../js/stl.js';
 
 const outDir = new URL('../stl/', import.meta.url);
 mkdirSync(outDir, { recursive: true });
-for (const f of readdirSync(outDir)) rmSync(new URL(f, outDir));
+// Il progetto Bambu (.3mf) resta: lo rigenera npm run build:3mf, che richiede Bambu Studio.
+for (const f of readdirSync(outDir)) if (!f.endsWith('.3mf')) rmSync(new URL(f, outDir));
 
 const model = buildModel(await loadManifold(), DEFAULT_PARAMS);
 const d = model.dims;
@@ -23,19 +24,18 @@ for (const part of model.parts) {
 }
 const readme = `Ordina-colori - file di stampa (Bambu Lab P1S, PLA, ugello 0,4, strato 0,2)
 
-scatola.stl          x1  aperta a 180°, print in place. PAUSA a Z = ${d.pauseZ.toFixed(1)} mm: 4 magneti ${6}x${3} mm.
+scatola.stl          x1  aperta a 180°, print in place, nessuna pausa. Alla prima chiusura il fermo a 90° scatta una volta.
 anelli_x10.stl       x4  un piatto per colore (rosa, verde, giallo, blu). In piedi.
 anello.stl           -   anello singolo, se preferisci disporli da te.
 aste_x6.stl          x1  6 aste distese su una faccia.
 asta.stl             -   asta singola.
-piatto_di_prova.stl  x1  da stampare prima: anelli, spezzone d'asta, 2 sedi, binario, nocca.
-stampa_prova.stl     x1  poi questa: scatola mini (${m.n} binari x ${m.p.capacity}), 1 asta, 1 anello in un piatto. Stessa PAUSA a Z = ${m.pauseZ.toFixed(1)} mm.
+piatto_di_prova.stl  x1  da stampare prima: anelli, spezzone d'asta, ritaglio del coperchio con 2 scatti, binario, nocca.
+stampa_prova.stl     x1  poi questa: scatola mini (${m.n} binari x ${m.p.capacity}), 1 asta, 1 anello in un piatto, nessuna pausa.
 
 Nessun supporto. Compensazione piede d'elefante attiva (0,1-0,15 mm).
 Scatola chiusa ${d.width.toFixed(1)} x ${d.length.toFixed(1)} x ${d.H.toFixed(1)} mm.
-Magneti: attaccali a coppie e segna la faccia libera; nella base segno verso l'esterno, nel coperchio segno verso l'interno.
 `;
 files['LEGGIMI.txt'] = new TextEncoder().encode(readme);
-files['parametri.json'] = new TextEncoder().encode(JSON.stringify({ parametri: DEFAULT_PARAMS, pausaMagnetiZ: d.pauseZ }, null, 2));
+files['parametri.json'] = new TextEncoder().encode(JSON.stringify({ parametri: DEFAULT_PARAMS }, null, 2));
 writeFileSync(new URL('ordina-colori-stl.zip', outDir), zipSync(files, { level: 9, mtime: new Date('2026-01-01') }));
 console.log('stl/ordina-colori-stl.zip');

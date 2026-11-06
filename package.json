@@ -9,6 +9,7 @@
     "test:geo": "node tools/check.mjs",
     "test:game": "node tools/test-game.mjs",
     "build:stl": "node tools/build-stl.mjs",
+    "build:3mf": "node tools/build-3mf.mjs",
     "build": "node tools/build-stl.mjs && node tools/build-site.mjs",
     "serve": "python3 -m http.server 8080"
   },

@@ -51,7 +51,7 @@
     </a>
     <div class="top-actions">
       <button id="btn-mini" class="btn" disabled title="Scatola mini da 3 binari, un'asta e un anello, in un solo piatto (STL)"><svg class="ico"><use href="#i-box"/></svg><span>Stampa prova</span></button>
-      <button id="btn-zip" class="btn primary" disabled><svg class="ico"><use href="#i-download"/></svg><span>Tutti gli STL</span></button>
+      <a id="btn-3mf" class="btn primary" href="stl/ordina-colori-bambu.3mf" download title="Progetto Bambu Studio con i 6 piatti pronti: scatola, aste e un piatto di anelli per colore (P1S 0.4, 0.20mm Standard, PLA)"><svg class="ico"><use href="#i-download"/></svg><span>Scarica 3MF</span></a>
       <a class="btn" href="https://github.com/Davide6414/Color_toy_fidget_stack" target="_blank" rel="noopener">GitHub</a>
     </div>
   </header>
@@ -119,9 +119,9 @@
         </p>
         <button class="anim feature" data-anim="partita"><svg class="ico"><use href="#i-play"/></svg><span><strong>Guarda una partita dall'inizio</strong><small>Sfila, agita, reinfila, apri, gioca, chiudi.</small></span></button>
         <ol class="steps">
-          <li><strong>Sfila le aste.</strong> A scatola chiusa si tirano fuori dalle tacche frontali: gli anelli restano dentro.</li>
+          <li><strong>Sfila le aste.</strong> A scatola chiusa si tira ogni asta per la coda: dopo un piccolo scatto scorre libera, gli anelli restano dentro.</li>
           <li><strong>Agita.</strong> Gli anelli, più lunghi che larghi, possono fermarsi solo distesi nei binari, con il foro in asse.</li>
-          <li><strong>Reinfila le aste.</strong> Ognuna attraversa gli anelli del suo binario e si innesta nella barra in fondo.</li>
+          <li><strong>Reinfila le aste.</strong> Di punta nella tacca, appoggiata sul fondo: attraversa gli anelli del binario e scatta in sede nella barra.</li>
           <li><strong>Apri a 90°.</strong> La barra è solidale al coperchio: le aste si alzano e gli anelli scivolano sulla barra.</li>
           <li><strong>Gioca.</strong> Un anello alla volta, dalla cima di un'asta all'altra. Massimo 10 per asta.</li>
           <li><strong>Chiudi.</strong> Anche a partita in corso: le aste tornano nei binari con gli anelli infilati.</li>
@@ -132,7 +132,7 @@
           <button class="anim" data-anim="tacche"><svg class="ico"><use href="#i-play"/></svg><span><strong>Tacche frontali</strong><small>Fori di guida a scatola chiusa, aperte in alto per lasciare salire le aste.</small></span></button>
           <button class="anim" data-anim="barra"><svg class="ico"><use href="#i-play"/></svg><span><strong>Barra e sedi</strong><small>L'innesto delle aste e l'appoggio degli anelli.</small></span></button>
           <button class="anim" data-anim="cerniera"><svg class="ico"><use href="#i-play"/></svg><span><strong>Cerniera print in place</strong><small>Da 0° a 180°: esce dalla stampa già montata.</small></span></button>
-          <button class="anim" data-anim="magneti"><svg class="ico"><use href="#i-play"/></svg><span><strong>Fermo magnetico a 90°</strong><small>Quattro magneti, una sola pausa di stampa.</small></span></button>
+          <button class="anim" data-anim="fermo"><svg class="ico"><use href="#i-play"/></svg><span><strong>Fermo a scatto a 90°</strong><small>Due dentini ai lati della cerniera: clic a 90°, nessun magnete.</small></span></button>
           <button class="anim" data-anim="chiusura"><svg class="ico"><use href="#i-play"/></svg><span><strong>Chiusura a scatto</strong><small>Due linguette elastiche tengono chiuso mentre agiti.</small></span></button>
           <button class="anim" data-anim="stampa"><svg class="ico"><use href="#i-play"/></svg><span><strong>Piatti di stampa</strong><small>Scatola, anelli, aste e piatto di prova.</small></span></button>
         </div>
@@ -172,7 +172,7 @@
       </section>
 
       <section class="tab" id="tab-parts" role="tabpanel" aria-labelledby="t-parts" hidden>
-        <p class="note">Tre stampe e quattro magneti. Nessuna vite, nessuna colla: la scatola esce dalla stampante già montata.</p>
+        <p class="note">Tre stampe e niente da comprare. Nessuna vite, nessuna colla, nessun magnete: la scatola esce dalla stampante già montata.</p>
         <div id="part-list" class="cards"></div>
       </section>
 

@@ -63,7 +63,7 @@ export function tic(pitch = 0) {
   tone(a, t, { f0: 1500 + pitch * 120, f1: 900, len: 0.04, gain: 0.08 });
 }
 
-// Magneti del fermo a 90° o linguette che scattano.
+// Fermo a 90° o linguette che scattano.
 export function clack() {
   const a = ready('clack', 0.15);
   if (!a) return;
